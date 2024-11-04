@@ -31,7 +31,7 @@ class PostgresSettings:
 postgres_settings = PostgresSettings()
 
 bot_settings = BotSettings()
-
+SCOPES = ["https://www.googleapis.com/auth/yt-analytics.readonly"]
 default = DefaultBotProperties(parse_mode='Markdown', protect_content=False)
 bot = Bot(token=bot_settings.TOKEN, default=default)
 dp = Dispatcher()

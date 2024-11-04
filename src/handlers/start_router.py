@@ -18,7 +18,8 @@ start_router = Router()
 @start_router.message(CommandStart(), StateFilter(None))
 async def start_command(message: Message, state: FSMContext,
                         user_service: UserService = user_service_fabric()):
-    await user_service.create_user({'chat_id': message.chat.id, 'username': message.chat.username})
+    if not await user_service.get_user_by_id(message.chat.id):
+        await user_service.create_user({'chat_id': message.chat.id, 'username': message.chat.username})
     await state.set_state(PrivateRoom.main_room)
     await bot.send_photo(message.chat.id, photo=START_PHOTO, caption=START_GREETING, reply_markup=open_start_keyboard())
     await help_hand(message, state)
