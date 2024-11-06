@@ -30,6 +30,8 @@ class PostgresSettings:
 
 postgres_settings = PostgresSettings()
 
+REDIRECT_URL = "urn:ietf:wg:oauth:2.0:oob"
+
 bot_settings = BotSettings()
 SCOPES = ["https://www.googleapis.com/auth/yt-analytics.readonly", "https://www.googleapis.com/auth/youtube.readonly"]
 default = DefaultBotProperties(parse_mode='Markdown', protect_content=False)

@@ -6,7 +6,7 @@ from aiogram.types import Message
 
 from config import bot
 from src.db.models import Channels
-from src.keyboards.keyboards import main_room_keyboard, room1_keyboard, channel_room_keyboard
+from src.keyboards.keyboards import main_room_keyboard, room1_keyboard, channel_room_keyboard, back_keyboard
 from src.services.channel_service import ChannelService
 from src.services.youtube_service import YoutubeService
 from src.states.states import PrivateRoom
@@ -161,7 +161,9 @@ async def add_channel_file_hand(message: Message, state: FSMContext,
 @private_rooms_router.message(PrivateRoom.channel_state)
 async def channel_rooms_hand(message: Message, state: FSMContext):
     await state.set_state(PrivateRoom.in_req)
-    await state.update_data(channel_name=message.text)
+    data = await state.get_data()
+    if not data.get("channel_name"):
+        await state.update_data(channel_name=message.text)
     await bot.send_message(message.chat.id, CHANNEL_ROOM, reply_markup=channel_room_keyboard())
 
 
@@ -197,7 +199,9 @@ async def channel_rooms_hand(message: Message, state: FSMContext,
         state_data = await state.get_data()
         channel_name = state_data.get("channel_name")
         result = await youtube_service.get_views_by_date(date[0], date[1], message.chat.id, channel_name)
-        await bot.send_message(message.chat.id, f'In period bettwin {date[0]} and {date[1]} was {result} views')
+        await bot.send_message(message.chat.id, f'In period bettwin {date[0]} and {date[1]} was {result} views',
+                               reply_markup=back_keyboard())
+        await state.set_state(PrivateRoom.channel_state)
     except:
         await bot.send_message(message.chat.id, 'Try one more time')
 
@@ -210,7 +214,9 @@ async def channel_rooms_hand(message: Message, state: FSMContext,
         state_data = await state.get_data()
         channel_name = state_data.get("channel_name")
         result = await youtube_service.get_subscribers_gained_by_date(date[0], date[1], message.chat.id, channel_name)
-        await bot.send_message(message.chat.id, f'In period bettwin {date[0]} and {date[1]} was {result} subs')
+        await bot.send_message(message.chat.id, f'In period bettwin {date[0]} and {date[1]} was {result} subs',
+                               reply_markup=back_keyboard())
+        await state.set_state(PrivateRoom.channel_state)
     except:
         await bot.send_message(message.chat.id, 'Try one more time')
 
@@ -227,7 +233,9 @@ async def channel_rooms_hand(message: Message, state: FSMContext,
         result_percent = await youtube_service.get_average_view_percentage_by_date(date[0], date[1], message.chat.id,
                                                                                    channel_name)
         await bot.send_message(message.chat.id,
-                               f'In period bettwin {date[0]} and {date[1]} was {result_time} avg time view and {result_percent} avg perc view')
+                               f'In period bettwin {date[0]} and {date[1]} was {result_time} avg time view and {result_percent} avg perc view',
+                               reply_markup=back_keyboard())
+        await state.set_state(PrivateRoom.channel_state)
     except:
         await bot.send_message(message.chat.id, 'Try one more time')
 
@@ -242,6 +250,8 @@ async def channel_rooms_hand(message: Message, state: FSMContext,
         result = await youtube_service.get_video_count_by_date(date[0], date[1], message.chat.id,
                                                                channel_name)
         await bot.send_message(message.chat.id,
-                               f'In period bettwin {date[0]} and {date[1]} was {result} video published')
+                               f'In period bettwin {date[0]} and {date[1]} was {result} video published',
+                               reply_markup=back_keyboard())
+        await state.set_state(PrivateRoom.channel_state)
     except:
         await bot.send_message(message.chat.id, 'Try one more time')

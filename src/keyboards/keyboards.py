@@ -4,7 +4,7 @@ from aiogram.types import KeyboardButton
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 
 from src.utils.text_constants import KEY_START_SUB, main_room1, main_room2, main_room3, main_room4, main_room5, \
-    CHANNELS_ROOM_ADD_CHANNEL, ADMIN_GET_USERS_COUNT, ADMIN_CHANNELS_COUNT, ADMIN_GET_USER_REQ
+    CHANNELS_ROOM_ADD_CHANNEL, ADMIN_GET_USERS_COUNT, ADMIN_CHANNELS_COUNT, ADMIN_GET_USER_REQ, BACK_TEXT
 
 
 def open_start_keyboard():
@@ -59,4 +59,11 @@ def admin_keyboard():
     button_get_user_req = KeyboardButton(text=ADMIN_GET_USER_REQ)
     keyboard_builder.row(button_get_all_users,button_get_all_channels)
     keyboard_builder.row(button_get_user_req)
+    return keyboard_builder.as_markup(resize_keyboard=True)
+
+
+def back_keyboard():
+    keyboard_builder = ReplyKeyboardBuilder()
+    button_back = KeyboardButton(text=BACK_TEXT)
+    keyboard_builder.row(button_back)
     return keyboard_builder.as_markup(resize_keyboard=True)

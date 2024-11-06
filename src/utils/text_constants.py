@@ -36,3 +36,7 @@ ADMIN_TEXT = 'TEST TEXT'
 ADMIN_GET_USERS_COUNT = 'Получить количество пользователей'
 ADMIN_CHANNELS_COUNT = 'Получить количество каналов'
 ADMIN_GET_USER_REQ = 'Получить запросы пользователя'
+
+
+#Other
+BACK_TEXT = 'Назад'

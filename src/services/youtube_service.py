@@ -6,8 +6,9 @@ import google.auth
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from oauthlib.oauth2 import OAuth2Token
 
-from config import SCOPES
+from config import SCOPES, REDIRECT_URL
 from src.db.models import Channels
 from src.utils.repository import AbstractRepository
 
@@ -26,17 +27,31 @@ class YoutubeService:
                 [Channels.user_id == uid, Channels.channel_name == channel_name])
         if channel:
             creds_analytic = Credentials.from_authorized_user_info(json.loads(channel.youtube_analytic_token),
-                                                                   SCOPES[0])
-            creds_data = Credentials.from_authorized_user_info(json.loads(channel.youtube_data_token), SCOPES[1])
+                                                                   [SCOPES[0]])
+            creds_data = Credentials.from_authorized_user_info(json.loads(channel.youtube_data_token), [SCOPES[1]])
         if not creds_analytic or not creds_analytic.valid:
-            if creds_analytic and creds_analytic.expired and creds_analytic.refresh_token:
+            if (creds_analytic and creds_analytic.expired and creds_analytic.refresh_token) or (
+                    creds_data and creds_data.expired and creds_data.refresh_token):
                 creds_analytic.refresh(google.auth.transport.requests.Request())
                 creds_data.refresh(google.auth.transport.requests.Request())
+                await self.repo.update_one([Channels.user_id == uid, Channels.channel_name == channel_name],
+                                           {'youtube_analytic_token': creds_analytic.to_json(),
+                                            'youtube_data_token': creds_data.to_json()})
             else:
-                flow_analytic = InstalledAppFlow.from_client_config(json.loads(youtube_credits), SCOPES[0])
-                creds_analytic = flow_analytic.run_local_server(port=0)
-                flow_data = InstalledAppFlow.from_client_config(json.loads(youtube_credits), SCOPES[1])
-                creds_data = flow_data.run_local_server(port=0)
+                flow_analytic = InstalledAppFlow.from_client_config(json.loads(youtube_credits), [SCOPES[0]])
+                flow_analytic.redirect_uri = REDIRECT_URL
+                analytic_auth_url, _ = flow_analytic.authorization_url(prompt='consent')
+                print(analytic_auth_url)
+                anal_code = input()
+                flow_analytic.fetch_token(code=anal_code)
+                flow_data = InstalledAppFlow.from_client_config(json.loads(youtube_credits), [SCOPES[1]])
+                flow_data.redirect_uri = REDIRECT_URL
+                data_auth_url, _ = flow_data.authorization_url(prompt='consent')
+                print(data_auth_url)
+                data_code = input()
+                flow_data.fetch_token(code=data_code)
+                creds_analytic = flow_analytic.credentials
+                creds_data = flow_data.credentials
                 youtube = build("youtube", "v3", credentials=creds_data)
                 response = youtube.channels().list(
                     part="snippet",
