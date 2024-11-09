@@ -26,3 +26,9 @@ class PrivateRoom(StatesGroup):
     main_period_enter_for_videos = State()
     main_period_enter_for_subs = State()
     main_period_enter_for_agv_view = State()
+
+    back_to_channel = State()
+
+class AdminState(StatesGroup):
+    admin_room = State()
+    uid_enter = State()

@@ -12,3 +12,7 @@ class UserService:
 
     async def get_user_by_id(self, uid: int):
         return await self.repo.get_one([Users.chat_id == uid])
+
+
+    async def get_all_users(self):
+        return await self.repo.get_all_by_filter()

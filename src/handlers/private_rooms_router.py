@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 
 from aiogram import Router, F
@@ -8,52 +9,54 @@ from config import bot
 from src.db.models import Channels
 from src.keyboards.keyboards import main_room_keyboard, room1_keyboard, channel_room_keyboard, back_keyboard
 from src.services.channel_service import ChannelService
+from src.services.log_service import LogService
 from src.services.youtube_service import YoutubeService
 from src.states.states import PrivateRoom
 from src.utils.dependencies.channel_fabric import channel_service_fabric
+from src.utils.dependencies.log_fabric import log_service_fabric
 from src.utils.dependencies.youtube_fabric import youtube_service_fabric
 from src.utils.text_constants import MAIN_ROOT_TEXT, main_room1, CHANNELS_ROOM_ERROR_TEXT, CHANNELS_ROOM_LIST, \
     CHANNELS_ROOM_ADD_CHANNEL, CHANNEL_ROOM_ADD, CHANNEL_ROOM, main_room2, main_room_period, main_room3, main_room4, \
-    main_room5
+    main_room5, BACK_TEXT
 
 private_rooms_router = Router()
 
 
 @private_rooms_router.message(PrivateRoom.main_room)
-async def private_rooms_hand(message: Message, state: FSMContext):
+async def private_rooms_hand1(message: Message, state: FSMContext):
     await bot.send_message(message.chat.id, MAIN_ROOT_TEXT, reply_markup=main_room_keyboard())
     await state.set_state(PrivateRoom.second_stage_rooms)
 
 
 # # Channels hands
 @private_rooms_router.message(F.text == main_room2, PrivateRoom.second_stage_rooms)
-async def private_rooms_hand(message: Message, state: FSMContext):
+async def private_rooms_hand2(message: Message, state: FSMContext):
     await state.set_state(PrivateRoom.main_period_enter_for_views)
     await bot.send_message(message.chat.id, main_room_period)
 
 
 @private_rooms_router.message(F.text == main_room3, PrivateRoom.second_stage_rooms)
-async def channel_rooms_hand(message: Message, state: FSMContext):
+async def channel_rooms_hand3(message: Message, state: FSMContext):
     await state.set_state(PrivateRoom.main_period_enter_for_videos)
     await bot.send_message(message.chat.id, main_room_period)
 
 
 @private_rooms_router.message(F.text == main_room4, PrivateRoom.second_stage_rooms)
-async def channel_rooms_hand(message: Message, state: FSMContext):
+async def channel_rooms_hand4(message: Message, state: FSMContext):
     await state.set_state(PrivateRoom.main_period_enter_for_subs)
     await bot.send_message(message.chat.id, main_room_period)
 
 
 @private_rooms_router.message(F.text == main_room5, PrivateRoom.second_stage_rooms)
-async def channel_rooms_hand(message: Message, state: FSMContext):
+async def channel_rooms_hand5(message: Message, state: FSMContext):
     await state.set_state(PrivateRoom.main_period_enter_for_agv_view)
     await bot.send_message(message.chat.id, main_room_period)
 
 
 @private_rooms_router.message(PrivateRoom.main_period_enter_for_views)
-async def channel_rooms_hand(message: Message, state: FSMContext,
-                             youtube_service: YoutubeService = youtube_service_fabric(),
-                             channel_service: ChannelService = channel_service_fabric()):
+async def get_views_hand(message: Message, state: FSMContext,
+                         youtube_service: YoutubeService = youtube_service_fabric(),
+                         channel_service: ChannelService = channel_service_fabric()):
     date = message.text.split(' ')
     end_result = 0
     try:
@@ -61,15 +64,17 @@ async def channel_rooms_hand(message: Message, state: FSMContext,
         for channel in channels:
             result = await youtube_service.get_views_by_date(date[0], date[1], message.chat.id, channel.channel_name)
             end_result += result
-        await bot.send_message(message.chat.id, f'In period bettwin {date[0]} and {date[1]} was {end_result} views')
+        await bot.send_message(message.chat.id, f'In period bettwin {date[0]} and {date[1]} was {end_result} views',
+                               reply_markup=back_keyboard())
+        await state.set_state(PrivateRoom.main_room)
     except:
         await bot.send_message(message.chat.id, 'Try one more time')
 
 
 @private_rooms_router.message(PrivateRoom.main_period_enter_for_subs)
-async def channel_rooms_hand(message: Message, state: FSMContext,
-                             youtube_service: YoutubeService = youtube_service_fabric(),
-                             channel_service: ChannelService = channel_service_fabric()):
+async def get_subs_hand(message: Message, state: FSMContext,
+                        youtube_service: YoutubeService = youtube_service_fabric(),
+                        channel_service: ChannelService = channel_service_fabric()):
     date = message.text.split(' ')
     end_result = 0
     try:
@@ -78,15 +83,17 @@ async def channel_rooms_hand(message: Message, state: FSMContext,
             result = await youtube_service.get_subscribers_gained_by_date(date[0], date[1], message.chat.id,
                                                                           channel.channel_name)
             end_result += result
-        await bot.send_message(message.chat.id, f'In period bettwin {date[0]} and {date[1]} was {end_result} subs')
+        await bot.send_message(message.chat.id, f'In period bettwin {date[0]} and {date[1]} was {end_result} subs',
+                               reply_markup=back_keyboard())
+        await state.set_state(PrivateRoom.main_room)
     except:
         await bot.send_message(message.chat.id, 'Try one more time')
 
 
 @private_rooms_router.message(PrivateRoom.main_period_enter_for_agv_view)
-async def channel_rooms_hand(message: Message, state: FSMContext,
-                             youtube_service: YoutubeService = youtube_service_fabric(),
-                             channel_service: ChannelService = channel_service_fabric()):
+async def get_agv_hand(message: Message, state: FSMContext,
+                       youtube_service: YoutubeService = youtube_service_fabric(),
+                       channel_service: ChannelService = channel_service_fabric()):
     date = message.text.split(' ')
     end_result_time = []
     end_result_percent = []
@@ -103,15 +110,17 @@ async def channel_rooms_hand(message: Message, state: FSMContext,
         end_result_time = sum(end_result_time) / len(end_result_time)
         end_result_percent = sum(end_result_percent) / len(end_result_percent)
         await bot.send_message(message.chat.id,
-                               f'In period bettwin {date[0]} and {date[1]} was {end_result_time} avg time view and {end_result_percent} avg perc view')
+                               f'In period bettwin {date[0]} and {date[1]} was {end_result_time} avg time view and {end_result_percent} avg perc view',
+                               reply_markup=back_keyboard())
+        await state.set_state(PrivateRoom.main_room)
     except:
         await bot.send_message(message.chat.id, 'Try one more time')
 
 
 @private_rooms_router.message(PrivateRoom.main_period_enter_for_videos)
-async def channel_rooms_hand(message: Message, state: FSMContext,
-                             youtube_service: YoutubeService = youtube_service_fabric(),
-                             channel_service: ChannelService = channel_service_fabric()):
+async def get_vid_hand(message: Message, state: FSMContext,
+                       youtube_service: YoutubeService = youtube_service_fabric(),
+                       channel_service: ChannelService = channel_service_fabric()):
     date = message.text.split(' ')
     end_result = 0
     try:
@@ -121,7 +130,9 @@ async def channel_rooms_hand(message: Message, state: FSMContext,
                                                                    channel.channel_name)
             end_result += result
         await bot.send_message(message.chat.id,
-                               f'In period bettwin {date[0]} and {date[1]} was {end_result} video published')
+                               f'In period bettwin {date[0]} and {date[1]} was {end_result} video published',
+                               reply_markup=back_keyboard())
+        await state.set_state(PrivateRoom.main_room)
     except:
         await bot.send_message(message.chat.id, 'Try one more time')
 
@@ -152,13 +163,17 @@ async def add_channel_hand(message: Message, state: FSMContext):
 async def add_channel_file_hand(message: Message, state: FSMContext,
                                 youtube_service: YoutubeService = youtube_service_fabric()):
     await state.set_state(PrivateRoom.auth)
-    file = await bot.get_file(message.document.file_id)
-    file_data = await bot.download_file(file.file_path)
-    content = file_data.read().decode()
-    await youtube_service.get_authenticated_service(uid=message.chat.id, youtube_credits=content)
+    try:
+        file = await bot.get_file(message.document.file_id)
+        file_data = await bot.download_file(file.file_path)
+        content = file_data.read().decode()
+        await youtube_service.get_authenticated_service(uid=message.chat.id, youtube_credits=content)
+    except:
+        await state.set_state(PrivateRoom.main_room)
+        await private_rooms_hand1(message, state)
 
 
-@private_rooms_router.message(PrivateRoom.channel_state)
+@private_rooms_router.message(F.text != BACK_TEXT, PrivateRoom.channel_state)
 async def channel_rooms_hand(message: Message, state: FSMContext):
     await state.set_state(PrivateRoom.in_req)
     data = await state.get_data()
@@ -167,33 +182,51 @@ async def channel_rooms_hand(message: Message, state: FSMContext):
     await bot.send_message(message.chat.id, CHANNEL_ROOM, reply_markup=channel_room_keyboard())
 
 
+@private_rooms_router.message(F.text == BACK_TEXT, PrivateRoom.in_req)
+async def back_to_main_room_hand1(message: Message, state: FSMContext):
+    await state.set_state(PrivateRoom.main_room)
+    await private_rooms_hand1(message, state)
+
+
+@private_rooms_router.message(F.text == BACK_TEXT, PrivateRoom.channel_state)
+async def back_to_main_room_hand2(message: Message, state: FSMContext):
+    await state.set_state(PrivateRoom.main_room)
+    await private_rooms_hand1(message, state)
+
+
+@private_rooms_router.message(F.text == BACK_TEXT, PrivateRoom.back_to_channel)
+async def back_to_channel_room_hand(message: Message, state: FSMContext):
+    await state.set_state(PrivateRoom.channel_state)
+    await channel_rooms_hand(message, state)
+
+
 @private_rooms_router.message(F.text == main_room2, PrivateRoom.in_req)
-async def channel_rooms_hand(message: Message, state: FSMContext):
+async def in_req_hand(message: Message, state: FSMContext):
     await state.set_state(PrivateRoom.period_enter_for_views)
     await bot.send_message(message.chat.id, main_room_period)
 
 
 @private_rooms_router.message(F.text == main_room3, PrivateRoom.in_req)
-async def channel_rooms_hand(message: Message, state: FSMContext):
+async def in_req_hand(message: Message, state: FSMContext):
     await state.set_state(PrivateRoom.period_enter_for_videos)
     await bot.send_message(message.chat.id, main_room_period)
 
 
 @private_rooms_router.message(F.text == main_room4, PrivateRoom.in_req)
-async def channel_rooms_hand(message: Message, state: FSMContext):
+async def in_req_hand(message: Message, state: FSMContext):
     await state.set_state(PrivateRoom.period_enter_for_subs)
     await bot.send_message(message.chat.id, main_room_period)
 
 
 @private_rooms_router.message(F.text == main_room5, PrivateRoom.in_req)
-async def channel_rooms_hand(message: Message, state: FSMContext):
+async def in_req_hand(message: Message, state: FSMContext):
     await state.set_state(PrivateRoom.period_enter_for_agv_view)
     await bot.send_message(message.chat.id, main_room_period)
 
 
 @private_rooms_router.message(PrivateRoom.period_enter_for_views)
-async def channel_rooms_hand(message: Message, state: FSMContext,
-                             youtube_service: YoutubeService = youtube_service_fabric()):
+async def in_req_hand(message: Message, state: FSMContext,
+                      youtube_service: YoutubeService = youtube_service_fabric()):
     date = message.text.split(' ')
     try:
         state_data = await state.get_data()
@@ -201,14 +234,14 @@ async def channel_rooms_hand(message: Message, state: FSMContext,
         result = await youtube_service.get_views_by_date(date[0], date[1], message.chat.id, channel_name)
         await bot.send_message(message.chat.id, f'In period bettwin {date[0]} and {date[1]} was {result} views',
                                reply_markup=back_keyboard())
-        await state.set_state(PrivateRoom.channel_state)
+        await state.set_state(PrivateRoom.back_to_channel)
     except:
         await bot.send_message(message.chat.id, 'Try one more time')
 
 
 @private_rooms_router.message(PrivateRoom.period_enter_for_subs)
-async def channel_rooms_hand(message: Message, state: FSMContext,
-                             youtube_service: YoutubeService = youtube_service_fabric()):
+async def in_req_hand(message: Message, state: FSMContext,
+                      youtube_service: YoutubeService = youtube_service_fabric()):
     date = message.text.split(' ')
     try:
         state_data = await state.get_data()
@@ -216,14 +249,14 @@ async def channel_rooms_hand(message: Message, state: FSMContext,
         result = await youtube_service.get_subscribers_gained_by_date(date[0], date[1], message.chat.id, channel_name)
         await bot.send_message(message.chat.id, f'In period bettwin {date[0]} and {date[1]} was {result} subs',
                                reply_markup=back_keyboard())
-        await state.set_state(PrivateRoom.channel_state)
+        await state.set_state(PrivateRoom.back_to_channel)
     except:
         await bot.send_message(message.chat.id, 'Try one more time')
 
 
 @private_rooms_router.message(PrivateRoom.period_enter_for_agv_view)
-async def channel_rooms_hand(message: Message, state: FSMContext,
-                             youtube_service: YoutubeService = youtube_service_fabric()):
+async def in_req_hand(message: Message, state: FSMContext,
+                      youtube_service: YoutubeService = youtube_service_fabric()):
     date = message.text.split(' ')
     try:
         state_data = await state.get_data()
@@ -235,14 +268,15 @@ async def channel_rooms_hand(message: Message, state: FSMContext,
         await bot.send_message(message.chat.id,
                                f'In period bettwin {date[0]} and {date[1]} was {result_time} avg time view and {result_percent} avg perc view',
                                reply_markup=back_keyboard())
-        await state.set_state(PrivateRoom.channel_state)
+        await state.set_state(PrivateRoom.back_to_channel)
     except:
         await bot.send_message(message.chat.id, 'Try one more time')
 
 
 @private_rooms_router.message(PrivateRoom.period_enter_for_videos)
-async def channel_rooms_hand(message: Message, state: FSMContext,
-                             youtube_service: YoutubeService = youtube_service_fabric()):
+async def in_req_hand(message: Message, state: FSMContext,
+                      youtube_service: YoutubeService = youtube_service_fabric(),
+                      log_service: LogService = log_service_fabric()):
     date = message.text.split(' ')
     try:
         state_data = await state.get_data()
@@ -252,6 +286,10 @@ async def channel_rooms_hand(message: Message, state: FSMContext,
         await bot.send_message(message.chat.id,
                                f'In period bettwin {date[0]} and {date[1]} was {result} video published',
                                reply_markup=back_keyboard())
-        await state.set_state(PrivateRoom.channel_state)
-    except:
+        await state.set_state(PrivateRoom.back_to_channel)
+        await log_service.create_log(
+            {'user_id': message.chat.id, 'channel_name': channel_name, 'req_name': 'period of videos',
+             'start_date': datetime.strptime(date[0], "%Y-%m-%d"), 'end_date': datetime.strptime(date[1], "%Y-%m-%d"), 'date': datetime.now()})
+    except Exception as e:
+        print(e)
         await bot.send_message(message.chat.id, 'Try one more time')

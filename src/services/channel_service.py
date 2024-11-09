@@ -12,3 +12,7 @@ class ChannelService:
 
     async def get_all_user_channels(self, uid: int):
         return await self.repo.get_all_by_filter([Channels.user_id == uid])
+
+    async def get_all_channels(self):
+        return await self.repo.get_all_by_filter()
+
