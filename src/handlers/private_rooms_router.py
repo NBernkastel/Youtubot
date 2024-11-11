@@ -8,6 +8,7 @@ from aiogram.types import Message
 from config import bot
 from src.db.models import Channels
 from src.keyboards.keyboards import main_room_keyboard, room1_keyboard, channel_room_keyboard, back_keyboard
+from src.middlewares.sub_middleware import SubMiddleware
 from src.services.channel_service import ChannelService
 from src.services.log_service import LogService
 from src.services.youtube_service import YoutubeService
@@ -17,9 +18,16 @@ from src.utils.dependencies.log_fabric import log_service_fabric
 from src.utils.dependencies.youtube_fabric import youtube_service_fabric
 from src.utils.text_constants import MAIN_ROOT_TEXT, main_room1, CHANNELS_ROOM_ERROR_TEXT, CHANNELS_ROOM_LIST, \
     CHANNELS_ROOM_ADD_CHANNEL, CHANNEL_ROOM_ADD, CHANNEL_ROOM, main_room2, main_room_period, main_room3, main_room4, \
-    main_room5, BACK_TEXT
+    main_room5, BACK_TEXT, SUB_CONTINUE
 
 private_rooms_router = Router()
+private_rooms_router.message.middleware(SubMiddleware())
+
+
+@private_rooms_router.message(F.text == SUB_CONTINUE)
+async def from_sub_hand(message: Message, state: FSMContext):
+    await state.set_state(PrivateRoom.main_room)
+    await private_rooms_hand1(message, state)
 
 
 @private_rooms_router.message(PrivateRoom.main_room)
@@ -226,7 +234,8 @@ async def in_req_hand(message: Message, state: FSMContext):
 
 @private_rooms_router.message(PrivateRoom.period_enter_for_views)
 async def in_req_hand(message: Message, state: FSMContext,
-                      youtube_service: YoutubeService = youtube_service_fabric()):
+                      youtube_service: YoutubeService = youtube_service_fabric(),
+                      log_service: LogService = log_service_fabric()):
     date = message.text.split(' ')
     try:
         state_data = await state.get_data()
@@ -235,13 +244,18 @@ async def in_req_hand(message: Message, state: FSMContext,
         await bot.send_message(message.chat.id, f'In period bettwin {date[0]} and {date[1]} was {result} views',
                                reply_markup=back_keyboard())
         await state.set_state(PrivateRoom.back_to_channel)
+        await log_service.create_log(
+            {'user_id': message.chat.id, 'channel_name': channel_name, 'req_name': 'period of view',
+             'start_date': datetime.strptime(date[0], "%Y-%m-%d"), 'end_date': datetime.strptime(date[1], "%Y-%m-%d"),
+             'date': datetime.now()})
     except:
         await bot.send_message(message.chat.id, 'Try one more time')
 
 
 @private_rooms_router.message(PrivateRoom.period_enter_for_subs)
 async def in_req_hand(message: Message, state: FSMContext,
-                      youtube_service: YoutubeService = youtube_service_fabric()):
+                      youtube_service: YoutubeService = youtube_service_fabric(),
+                      log_service: LogService = log_service_fabric()):
     date = message.text.split(' ')
     try:
         state_data = await state.get_data()
@@ -250,13 +264,18 @@ async def in_req_hand(message: Message, state: FSMContext,
         await bot.send_message(message.chat.id, f'In period bettwin {date[0]} and {date[1]} was {result} subs',
                                reply_markup=back_keyboard())
         await state.set_state(PrivateRoom.back_to_channel)
+        await log_service.create_log(
+            {'user_id': message.chat.id, 'channel_name': channel_name, 'req_name': 'period of subs',
+             'start_date': datetime.strptime(date[0], "%Y-%m-%d"), 'end_date': datetime.strptime(date[1], "%Y-%m-%d"),
+             'date': datetime.now()})
     except:
         await bot.send_message(message.chat.id, 'Try one more time')
 
 
 @private_rooms_router.message(PrivateRoom.period_enter_for_agv_view)
 async def in_req_hand(message: Message, state: FSMContext,
-                      youtube_service: YoutubeService = youtube_service_fabric()):
+                      youtube_service: YoutubeService = youtube_service_fabric(),
+                      log_service: LogService = log_service_fabric()):
     date = message.text.split(' ')
     try:
         state_data = await state.get_data()
@@ -269,6 +288,10 @@ async def in_req_hand(message: Message, state: FSMContext,
                                f'In period bettwin {date[0]} and {date[1]} was {result_time} avg time view and {result_percent} avg perc view',
                                reply_markup=back_keyboard())
         await state.set_state(PrivateRoom.back_to_channel)
+        await log_service.create_log(
+            {'user_id': message.chat.id, 'channel_name': channel_name, 'req_name': 'period of agv view',
+             'start_date': datetime.strptime(date[0], "%Y-%m-%d"), 'end_date': datetime.strptime(date[1], "%Y-%m-%d"),
+             'date': datetime.now()})
     except:
         await bot.send_message(message.chat.id, 'Try one more time')
 
@@ -289,7 +312,8 @@ async def in_req_hand(message: Message, state: FSMContext,
         await state.set_state(PrivateRoom.back_to_channel)
         await log_service.create_log(
             {'user_id': message.chat.id, 'channel_name': channel_name, 'req_name': 'period of videos',
-             'start_date': datetime.strptime(date[0], "%Y-%m-%d"), 'end_date': datetime.strptime(date[1], "%Y-%m-%d"), 'date': datetime.now()})
+             'start_date': datetime.strptime(date[0], "%Y-%m-%d"), 'end_date': datetime.strptime(date[1], "%Y-%m-%d"),
+             'date': datetime.now()})
     except Exception as e:
         print(e)
         await bot.send_message(message.chat.id, 'Try one more time')

@@ -2,8 +2,10 @@ from aiogram.fsm.state import State, StatesGroup
 
 
 class Subscribe(StatesGroup):
-    sub_start = State()
-    qr_code = State()
+    sub_check = State()
+    get_photo = State()
+    in_proc = State()
+    decline = State()
 
 
 class Help(StatesGroup):

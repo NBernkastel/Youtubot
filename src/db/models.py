@@ -27,6 +27,7 @@ class Users(Base):
     username: Mapped[str] = mapped_column(String(255))
     subscribe_end: Mapped[datetime] = mapped_column(nullable=True, default=None)
     does_free_sub_used: Mapped[bool] = mapped_column(nullable=False, default=False)
+    is_admin: Mapped[bool] = mapped_column(default=False)
 
 
 class Channels(Base):
@@ -48,4 +49,12 @@ class Logs(Base):
     req_name: Mapped[str] = mapped_column(nullable=False)
     start_date: Mapped[datetime] = mapped_column(nullable=True, default=None)
     end_date: Mapped[datetime] = mapped_column(nullable=True, default=None)
+    date: Mapped[datetime] = mapped_column(nullable=False, default=datetime.now())
+
+
+
+class Bills(Base):
+    __tablename__ = 'bills'
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id = mapped_column(ForeignKey("user.chat_id"))
     date: Mapped[datetime] = mapped_column(nullable=False, default=datetime.now())

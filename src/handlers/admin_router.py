@@ -8,6 +8,7 @@ from aiogram.types import Message
 from config import bot
 from src.db.models import Logs
 from src.keyboards.keyboards import admin_keyboard
+from src.middlewares.admin_middleware import AdminMiddleware
 from src.services.channel_service import ChannelService
 from src.services.log_service import LogService
 from src.services.user_service import UserService
@@ -19,6 +20,8 @@ from src.utils.text_constants import ADMIN_TEXT, ADMIN_GET_USERS_COUNT, ADMIN_CH
     ADMIN_ENTER_UID
 
 admin_router = Router()
+
+admin_router.message.middleware(AdminMiddleware())
 
 
 @admin_router.message(Command("admin"))
@@ -47,11 +50,13 @@ async def help_hand(message: Message, state: FSMContext):
 
 @admin_router.message(AdminState.uid_enter)
 async def help_hand(message: Message, state: FSMContext, log_service: LogService = log_service_fabric()):
-    print('Test')
     logs: List[Logs] = await log_service.get_logs(int(message.text))
     response = []
     for log in logs:
         response.append(
             f'{log.user_id} {log.channel_name} {log.req_name} {log.start_date} - {log.end_date} {log.date}')
-    await bot.send_message(message.chat.id, '\n'.join(response))
-    await state.set_state(AdminState.admin_room)
+    if len(response) > 0:
+        await bot.send_message(message.chat.id, '\n'.join(response))
+    else:
+        await bot.send_message(message.chat.id, 'Логи отсутсвуют')
+        await state.set_state(AdminState.admin_room)

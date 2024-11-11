@@ -11,9 +11,17 @@ START_PHOTO = "AgACAgIAAxkBAAIVPGcibLIDbRh9J0fbbXXHBzr4TTe_AAJT5jEbMskRSUlSAn34e
 START_GREETING = "Приветствую, мне нравится твоя политическая позиция"
 KEY_START_SUB = 'Получить бесплатную подписку'
 SUB_START_TEXT = "Сдрасте купить скайрим вот такие расценки тута"
-MAIN_ROOT_TEXT = 'Текст личного кабинета'
+MAKE_SUB = 'Оформить подписку'
+ABOUT_SUB = 'Очень крутая подписка, пожалуйста отправте фото перевода'
+SUB_ERROR = 'Ошибка оплаты для деталей обратитесь к администратору @pavel'
+SUB_ACCEPT = 'Подписка подтверждена годен до '
+SUB_CONTINUE = 'Продолжить'
+
+ACCEPT_SUB = 'принять'
+DECLINE_SUB = 'отклонить'
 
 # main root text
+MAIN_ROOT_TEXT = 'Текст личного кабинета'
 main_room1 = 'Мои каналы'
 main_room2 = 'Все просмотры в период'
 main_room3 = 'Количество опублекованных видео в период'

@@ -1,10 +1,11 @@
 from typing import List
 
-from aiogram.types import KeyboardButton
-from aiogram.utils.keyboard import ReplyKeyboardBuilder
+from aiogram.types import KeyboardButton, InlineKeyboardButton
+from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 
 from src.utils.text_constants import KEY_START_SUB, main_room1, main_room2, main_room3, main_room4, main_room5, \
-    CHANNELS_ROOM_ADD_CHANNEL, ADMIN_GET_USERS_COUNT, ADMIN_CHANNELS_COUNT, ADMIN_GET_USER_REQ, BACK_TEXT
+    CHANNELS_ROOM_ADD_CHANNEL, ADMIN_GET_USERS_COUNT, ADMIN_CHANNELS_COUNT, ADMIN_GET_USER_REQ, BACK_TEXT, MAKE_SUB, \
+    ACCEPT_SUB, DECLINE_SUB, SUB_CONTINUE
 
 
 def open_start_keyboard():
@@ -69,4 +70,26 @@ def back_keyboard():
     keyboard_builder = ReplyKeyboardBuilder()
     button_back = KeyboardButton(text=BACK_TEXT)
     keyboard_builder.row(button_back)
+    return keyboard_builder.as_markup(resize_keyboard=True)
+
+
+def sub_keyboard():
+    keyboard_builder = InlineKeyboardBuilder()
+    make_sub = InlineKeyboardButton(text=MAKE_SUB, callback_data="subscribe")
+    keyboard_builder.add(make_sub)
+    return keyboard_builder.as_markup(resize_keyboard=True)
+
+
+def accept_keyboard():
+    keyboard_builder = InlineKeyboardBuilder()
+    accept_sub = InlineKeyboardButton(text=ACCEPT_SUB, callback_data=f"accept")
+    decline_sub = InlineKeyboardButton(text=DECLINE_SUB, callback_data=f"decline")
+    keyboard_builder.row(accept_sub, decline_sub)
+    return keyboard_builder.as_markup(resize_keyboard=True)
+
+
+def continue_keyboard():
+    keyboard_builder = ReplyKeyboardBuilder()
+    button_cont = KeyboardButton(text=SUB_CONTINUE)
+    keyboard_builder.row(button_cont)
     return keyboard_builder.as_markup(resize_keyboard=True)

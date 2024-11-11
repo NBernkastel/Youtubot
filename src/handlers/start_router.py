@@ -8,7 +8,7 @@ from config import bot
 from src.handlers.help_router import  help_hand
 from src.keyboards.keyboards import open_start_keyboard
 from src.services.user_service import UserService
-from src.states.states import PrivateRoom
+from src.states.states import PrivateRoom, Subscribe
 from src.utils.dependencies.user_fabric import user_service_fabric
 from src.utils.text_constants import START_PHOTO, START_GREETING
 

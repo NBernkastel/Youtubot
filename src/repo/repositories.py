@@ -1,4 +1,4 @@
-from src.db.models import Users, Channels, Logs
+from src.db.models import Users, Channels, Logs, Bills
 from src.utils.repository import SQLAlchemyRepository
 
 
@@ -12,3 +12,7 @@ class ChannelRepository(SQLAlchemyRepository):
 
 class LogRepository(SQLAlchemyRepository):
     model = Logs
+
+
+class BillRepository(SQLAlchemyRepository):
+    model = Bills
