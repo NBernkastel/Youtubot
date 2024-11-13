@@ -4,7 +4,7 @@ from typing import List
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-
+from urllib.parse import quote
 from config import bot
 from src.db.models import Channels
 from src.keyboards.keyboards import main_room_keyboard, room1_keyboard, channel_room_keyboard, back_keyboard
@@ -175,10 +175,40 @@ async def add_channel_file_hand(message: Message, state: FSMContext,
         file = await bot.get_file(message.document.file_id)
         file_data = await bot.download_file(file.file_path)
         content = file_data.read().decode()
-        await youtube_service.get_authenticated_service(uid=message.chat.id, youtube_credits=content)
+        analytic_url, analytic_flow = await youtube_service.get_analytic_login_url(youtube_credits=content)
+        await state.update_data({'analytic_flow': analytic_flow, 'content': content})
+        await bot.send_message(message.chat.id, f'Send first code from this url - [Click here]({analytic_url})', parse_mode='Markdown')
+        await state.set_state(PrivateRoom.get_analytic_code)
     except:
         await state.set_state(PrivateRoom.main_room)
         await private_rooms_hand1(message, state)
+
+
+@private_rooms_router.message(PrivateRoom.get_analytic_code)
+async def get_analytic_code(message: Message, state: FSMContext,
+                            youtube_service: YoutubeService = youtube_service_fabric()):
+    data = await state.get_data()
+    analytic_flow = data.get('analytic_flow')
+    content = data.get('content')
+    creds_analytic = await youtube_service.res_analytic_token(message.text, analytic_flow)
+    await state.update_data({'creds_analytic': creds_analytic})
+    data_url, data_flow = await youtube_service.get_data_login_url(youtube_credits=content)
+    await state.update_data({'data_flow': data_flow})
+    await bot.send_message(message.chat.id, f'Send first code from this url - [Click here]({data_url})', parse_mode='Markdown')
+    await state.set_state(PrivateRoom.get_data_code)
+
+
+@private_rooms_router.message(PrivateRoom.get_data_code)
+async def get_analytic_code(message: Message, state: FSMContext,
+                            youtube_service: YoutubeService = youtube_service_fabric()):
+    data = await state.get_data()
+    creds_analytic = data.get('creds_analytic')
+    data_flow = data.get('data_flow')
+    youtube_creds = data.get('content')
+    creds_data = await youtube_service.res_data_token(message.text, data_flow)
+    await youtube_service.get_authenticated_service(message.chat.id, youtube_credits=youtube_creds,
+                                                    creds_analytic=creds_analytic, creds_data=creds_data, auth=True)
+    await state.set_state(PrivateRoom.main_room)
 
 
 @private_rooms_router.message(F.text != BACK_TEXT, PrivateRoom.channel_state)

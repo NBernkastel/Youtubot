@@ -18,9 +18,8 @@ class YoutubeService:
     def __init__(self, repo: AbstractRepository):
         self.repo = repo
 
-    async def get_authenticated_service(self, uid=None, channel_name=None, youtube_credits=None):
-        creds_analytic = None
-        creds_data = None
+    async def get_authenticated_service(self, uid=None, channel_name=None, youtube_credits=None, creds_analytic=None,
+                                        creds_data=None, auth=False):
         channel = None
         if channel_name and uid:
             channel: Channels = await self.repo.get_one(
@@ -29,29 +28,16 @@ class YoutubeService:
             creds_analytic = Credentials.from_authorized_user_info(json.loads(channel.youtube_analytic_token),
                                                                    [SCOPES[0]])
             creds_data = Credentials.from_authorized_user_info(json.loads(channel.youtube_data_token), [SCOPES[1]])
-        if not creds_analytic or not creds_analytic.valid:
-            if (creds_analytic and creds_analytic.expired and creds_analytic.refresh_token) or (
-                    creds_data and creds_data.expired and creds_data.refresh_token):
-                creds_analytic.refresh(google.auth.transport.requests.Request())
-                creds_data.refresh(google.auth.transport.requests.Request())
-                await self.repo.update_one([Channels.user_id == uid, Channels.channel_name == channel_name],
-                                           {'youtube_analytic_token': creds_analytic.to_json(),
-                                            'youtube_data_token': creds_data.to_json()})
+        if auth or not creds_analytic or not creds_analytic.valid:
+            if not auth:
+                if (creds_analytic and creds_analytic.expired and creds_analytic.refresh_token) or (
+                        creds_data and creds_data.expired and creds_data.refresh_token):
+                    creds_analytic.refresh(google.auth.transport.requests.Request())
+                    creds_data.refresh(google.auth.transport.requests.Request())
+                    await self.repo.update_one([Channels.user_id == uid, Channels.channel_name == channel_name],
+                                               {'youtube_analytic_token': creds_analytic.to_json(),
+                                                'youtube_data_token': creds_data.to_json()})
             else:
-                flow_analytic = InstalledAppFlow.from_client_config(json.loads(youtube_credits), [SCOPES[0]])
-                flow_analytic.redirect_uri = REDIRECT_URL
-                analytic_auth_url, _ = flow_analytic.authorization_url(prompt='consent')
-                print(analytic_auth_url)
-                anal_code = input()
-                flow_analytic.fetch_token(code=anal_code)
-                flow_data = InstalledAppFlow.from_client_config(json.loads(youtube_credits), [SCOPES[1]])
-                flow_data.redirect_uri = REDIRECT_URL
-                data_auth_url, _ = flow_data.authorization_url(prompt='consent')
-                print(data_auth_url)
-                data_code = input()
-                flow_data.fetch_token(code=data_code)
-                creds_analytic = flow_analytic.credentials
-                creds_data = flow_data.credentials
                 youtube = build("youtube", "v3", credentials=creds_data)
                 response = youtube.channels().list(
                     part="snippet",
@@ -85,6 +71,28 @@ class YoutubeService:
             date, views = row
             views_summ += views
         return views_summ
+
+    async def get_analytic_login_url(self, youtube_credits):
+        flow_analytic = InstalledAppFlow.from_client_config(json.loads(youtube_credits), [SCOPES[0]])
+        flow_analytic.redirect_uri = REDIRECT_URL
+        analytic_auth_url, _ = flow_analytic.authorization_url(prompt='consent')
+        return analytic_auth_url, flow_analytic
+
+    async def get_data_login_url(self, youtube_credits):
+        flow_data = InstalledAppFlow.from_client_config(json.loads(youtube_credits), [SCOPES[1]])
+        flow_data.redirect_uri = REDIRECT_URL
+        data_auth_url, _ = flow_data.authorization_url(prompt='consent')
+        return data_auth_url, flow_data
+
+    async def res_analytic_token(self, code, flow_analytic):
+        flow_analytic.fetch_token(code=code)
+        creds_analytic = flow_analytic.credentials
+        return creds_analytic
+
+    async def res_data_token(self, code, flow_data):
+        flow_data.fetch_token(code=code)
+        creds_data = flow_data.credentials
+        return creds_data
 
     async def get_subscribers_gained_by_date(self, start_date, end_date, uid, channel_name):
         youtube_analytics = await self.get_authenticated_service(uid, channel_name)
