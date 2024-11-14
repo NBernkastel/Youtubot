@@ -5,12 +5,17 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 
 from src.utils.text_constants import KEY_START_SUB, main_room1, main_room2, main_room3, main_room4, main_room5, \
     CHANNELS_ROOM_ADD_CHANNEL, ADMIN_GET_USERS_COUNT, ADMIN_CHANNELS_COUNT, ADMIN_GET_USER_REQ, BACK_TEXT, MAKE_SUB, \
-    ACCEPT_SUB, DECLINE_SUB, SUB_CONTINUE
+    ACCEPT_SUB, DECLINE_SUB, SUB_CONTINUE, KEY_START_NOT_SUB, SUB_EXP
 
 
-def open_start_keyboard():
+def open_start_keyboard(free_sub: bool, sub_end: bool):
     keyboard_builder = ReplyKeyboardBuilder()
-    button = KeyboardButton(text=KEY_START_SUB)
+    if free_sub and not sub_end:
+        button = KeyboardButton(text=KEY_START_SUB)
+    if not free_sub and not sub_end:
+        button = KeyboardButton(text=KEY_START_NOT_SUB)
+    if sub_end:
+        button = KeyboardButton(text=SUB_EXP)
     keyboard_builder.row(button)
     return keyboard_builder.as_markup(resize_keyboard=True)
 
@@ -61,8 +66,9 @@ def admin_keyboard():
     button_get_all_users = KeyboardButton(text=ADMIN_GET_USERS_COUNT)
     button_get_all_channels = KeyboardButton(text=ADMIN_CHANNELS_COUNT)
     button_get_user_req = KeyboardButton(text=ADMIN_GET_USER_REQ)
+    button_back = KeyboardButton(text=BACK_TEXT)
     keyboard_builder.row(button_get_all_users, button_get_all_channels)
-    keyboard_builder.row(button_get_user_req)
+    keyboard_builder.row(button_get_user_req, button_back)
     return keyboard_builder.as_markup(resize_keyboard=True)
 
 

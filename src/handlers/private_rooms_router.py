@@ -4,7 +4,6 @@ from typing import List
 from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
-from urllib.parse import quote
 from config import bot
 from src.db.models import Channels
 from src.keyboards.keyboards import main_room_keyboard, room1_keyboard, channel_room_keyboard, back_keyboard

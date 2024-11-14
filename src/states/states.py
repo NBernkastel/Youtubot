@@ -6,6 +6,7 @@ class Subscribe(StatesGroup):
     get_photo = State()
     in_proc = State()
     decline = State()
+    free = State()
 
 
 class Help(StatesGroup):
