@@ -33,6 +33,7 @@ main_room3 = 'Количество опублекованных видео в п
 main_room4 = 'Подписчики в период'
 main_room5 = 'Средний процент просмотра и средняя длительность со всех каналов'
 main_room_period = 'Введите период в формате ГГ-ММ-ДД  ГГ-ММ-ДД'
+main_room_error = 'Введите верную дату'
 
 #Channgels room text
 CHANNELS_ROOM_ERROR_TEXT = 'Не найдено ни одного канала'
@@ -42,6 +43,8 @@ CHANNELS_ROOM_LIST = 'Список каналов\n'
 #Channel root text
 CHANNEL_ROOM_ADD = 'Отправте файл с данными для канала'
 CHANNEL_ROOM = 'Текст канала'
+CHANNEL_ROOM_ADD_ERROR = 'Отправте пожалуйста файл в формате json'
+CHANNEL_AUTH_ERROR = 'Ошибка добавления канала'
 
 
 #admin

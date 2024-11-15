@@ -66,10 +66,10 @@ class YoutubeService:
             metrics="views",
             dimensions="day"
         ).execute()
-        views_summ = 0
+        views_summ = []
         for row in response.get("rows", []):
             date, views = row
-            views_summ += views
+            views_summ.append([date, views])
         return views_summ
 
     async def get_analytic_login_url(self, youtube_credits):
@@ -103,11 +103,13 @@ class YoutubeService:
             metrics="subscribersGained",
             dimensions="day"
         ).execute()
-        subs = 0
+        subs = []
+        subs_sum = 0
         for row in response.get("rows", []):
             date, subscribers_gained = row
-            subs += subscribers_gained
-        return subs
+            subs.append([str(date), subscribers_gained])
+            subs_sum += subscribers_gained
+        return subs, subs_sum
 
     async def get_average_view_duration_by_date(self, start_date, end_date, uid, channel_name):
         youtube_analytics = await self.get_authenticated_service(uid, channel_name)
@@ -122,9 +124,8 @@ class YoutubeService:
         for row in response.get("rows", []):
             date, avg_view_duration = row
             avg_view_duration_minutes = round(avg_view_duration / 60, 2)
-            durations.append(avg_view_duration_minutes)
-        avg = sum(durations) / len(durations)
-        return round(avg, 2)
+            durations.append([date, avg_view_duration_minutes])
+        return durations
 
     async def get_average_view_percentage_by_date(self, start_date, end_date, uid, channel_name):
         youtube_analytics = await self.get_authenticated_service(uid, channel_name)
@@ -138,9 +139,8 @@ class YoutubeService:
         percents = []
         for row in response.get("rows", []):
             date, avg_view_percentage = row
-            percents.append(avg_view_percentage)
-        avg = sum(percents) / len(percents)
-        return round(avg, 2)
+            percents.append([date, round(avg_view_percentage, 2)])
+        return percents
 
     async def get_channel_id(self, youtube):
         response = youtube.channels().list(
@@ -156,7 +156,7 @@ class YoutubeService:
         end_date_dt = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
         videos_published = []
         request = youtube[1].search().list(
-            part="id",
+            part="snippet",
             channelId=channel_id,
             publishedAfter=start_date_dt.isoformat() + "Z",
             publishedBefore=end_date_dt.isoformat() + "Z",
@@ -165,6 +165,15 @@ class YoutubeService:
         )
         while request:
             response = request.execute()
-            videos_published.extend(response.get("items", []))
+            for item in response.get("items", []):
+                video_id = item["id"]["videoId"]
+                title = item["snippet"]["title"]
+                published_at = item["snippet"]["publishedAt"]
+                videos_published.append([
+                    video_id,
+                    title,
+                    datetime.fromisoformat(published_at)
+                ])
             request = youtube[1].search().list_next(request, response)
-        return len(videos_published)
+
+        return videos_published
