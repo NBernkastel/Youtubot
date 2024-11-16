@@ -259,7 +259,8 @@ async def channels_room_hand(message: Message, state: FSMContext,
 @private_rooms_router.message(F.text == CHANNELS_ROOM_ADD_CHANNEL, PrivateRoom.channel_state)
 async def add_channel_hand(message: Message, state: FSMContext):
     await state.set_state(PrivateRoom.send_file)
-    await bot.send_message(message.chat.id, CHANNEL_ROOM_ADD, reply_markup=back_keyboard())
+    video = FSInputFile('./public/vid.mp4')
+    await bot.send_video(message.chat.id, video, caption=CHANNEL_ROOM_ADD, reply_markup=back_keyboard())
 
 
 @private_rooms_router.message(F.document, PrivateRoom.send_file)

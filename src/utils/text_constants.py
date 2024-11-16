@@ -41,7 +41,7 @@ CHANNELS_ROOM_ADD_CHANNEL = 'Добавить канал'
 CHANNELS_ROOM_LIST = 'Список каналов\n'
 
 #Channel root text
-CHANNEL_ROOM_ADD = 'Отправьте файл с данными для канала'
+CHANNEL_ROOM_ADD = 'Отправьте файл с данными для канала https://console.cloud.google.com'
 CHANNEL_ROOM = 'Текст канала'
 CHANNEL_ROOM_ADD_ERROR = 'Отправьте пожалуйста файл в формате json'
 CHANNEL_AUTH_ERROR = 'Ошибка добавления канала'
