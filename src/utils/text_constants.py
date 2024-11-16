@@ -6,7 +6,6 @@ HELP_TEXT = (
     "Нажмите на команду, чтобы узнать подробнее."
 )
 
-START_PHOTO = "AgACAgIAAxkBAAIVPGcibLIDbRh9J0fbbXXHBzr4TTe_AAJT5jEbMskRSUlSAn34eStNAQADAgADeAADNgQ"
 START_GREETING = "Бот для YouTube, предназначенный для мониторинга активности на каналах"
 KEY_START_SUB = 'Получить бесплатную подписку'
 FREE_SUB_GET = 'Пробная подписка получена'
@@ -25,7 +24,7 @@ ACCEPT_SUB = 'Принять'
 DECLINE_SUB = 'Отклонить'
 
 # main root text
-MAIN_ROOT_TEXT = 'Текст личного кабинета'
+MAIN_ROOT_TEXT = 'Личный кабинет'
 main_room1 = 'Мои каналы'
 main_room2 = 'Все просмотры в период'
 main_room3 = 'Количество опубликованных видео в период'
@@ -41,14 +40,14 @@ CHANNELS_ROOM_ADD_CHANNEL = 'Добавить канал'
 CHANNELS_ROOM_LIST = 'Список каналов\n'
 
 #Channel root text
-CHANNEL_ROOM_ADD = 'Отправьте файл с данными для канала https://console.cloud.google.com'
+CHANNEL_ROOM_ADD = 'Отправьте файл с данными для канала'
 CHANNEL_ROOM = 'Текст канала'
 CHANNEL_ROOM_ADD_ERROR = 'Отправьте пожалуйста файл в формате json'
 CHANNEL_AUTH_ERROR = 'Ошибка добавления канала'
 
 
 #admin
-ADMIN_TEXT = 'TEST TEXT'
+ADMIN_TEXT = 'Админ панель'
 ADMIN_GET_USERS_COUNT = 'Получить количество пользователей'
 ADMIN_CHANNELS_COUNT = 'Получить количество каналов'
 ADMIN_GET_USER_REQ = 'Получить запросы пользователя'
