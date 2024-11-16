@@ -40,7 +40,7 @@ async def add_sub(callback_query: CallbackQuery, state: FSMContext):
 @sub_router.message(F.content_type == 'photo', Subscribe.get_photo)
 async def get_sub_photo_hand(message: Message, state: FSMContext):
     message_id = await bot.send_photo(MODER_CHAT_ID, photo=message.photo[-1].file_id, reply_markup=accept_keyboard(),
-                                      caption=str(message.chat.id) + ' '+ message.chat.username)
+                                      caption=str(message.chat.id) + ' @'+ message.chat.username)
 
 
 @sub_router.message(F.content_type != 'photo' and F.text != SUB_CONTINUE, F.data == 'accept', Subscribe.get_photo)

@@ -6,6 +6,7 @@ from aiogram.types import TelegramObject
 from src.db.models import Users
 from src.services.user_service import UserService
 from src.utils.dependencies.user_fabric import user_service_fabric
+from src.utils.text_constants import ADMIN_ERROR
 
 
 class AdminMiddleware(BaseMiddleware):
@@ -21,4 +22,4 @@ class AdminMiddleware(BaseMiddleware):
         if user_data.is_admin and event.chat.id > 0:
             return await handler(event, data)
         else:
-            await event.answer('Вы не являетесь администратором!')
+            await event.answer(ADMIN_ERROR)

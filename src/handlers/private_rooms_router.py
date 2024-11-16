@@ -19,7 +19,8 @@ from src.utils.dependencies.log_fabric import log_service_fabric
 from src.utils.dependencies.youtube_fabric import youtube_service_fabric
 from src.utils.text_constants import MAIN_ROOT_TEXT, main_room1, CHANNELS_ROOM_ERROR_TEXT, CHANNELS_ROOM_LIST, \
     CHANNELS_ROOM_ADD_CHANNEL, CHANNEL_ROOM_ADD, CHANNEL_ROOM, main_room2, main_room_period, main_room3, main_room4, \
-    main_room5, BACK_TEXT, SUB_CONTINUE, KEY_START_NOT_SUB, CHANNEL_ROOM_ADD_ERROR, CHANNEL_AUTH_ERROR, main_room_error
+    main_room5, BACK_TEXT, SUB_CONTINUE, KEY_START_NOT_SUB, CHANNEL_ROOM_ADD_ERROR, CHANNEL_AUTH_ERROR, main_room_error, \
+    MAIN_ROOM_NO_CHANNELS, NO_DATA_TEXT
 
 private_rooms_router = Router()
 private_rooms_router.message.middleware(SubMiddleware())
@@ -79,6 +80,9 @@ async def get_views_hand(message: Message, state: FSMContext,
     date = message.text.split(' ')
     try:
         channels: List[Channels] = await channel_service.get_all_user_channels(message.chat.id)
+        if len(channels) == 0:
+            await bot.send_message(message.chat.id, MAIN_ROOM_NO_CHANNELS)
+            return
         result_data = []
         end_sum = 0
         for channel in channels:
@@ -89,9 +93,12 @@ async def get_views_hand(message: Message, state: FSMContext,
         result_data.append([end_sum])
         filename = await CSVService.create_csv_file(result_data)
         file = FSInputFile(filename)
-        await bot.send_document(message.chat.id, file,
-                                caption=str(end_sum),
-                                reply_markup=back_keyboard())
+        try:
+            await bot.send_document(message.chat.id, file,
+                                    caption='Всего просмотров - ' + str(end_sum),
+                                    reply_markup=back_keyboard())
+        except:
+            await bot.send_message(message.chat.id, NO_DATA_TEXT)
         await CSVService.delete_csv_file(file_path=filename)
         await log_service.create_log(
             {'user_id': message.chat.id, 'channel_name': 'All', 'req_name': 'period of view',
@@ -112,6 +119,9 @@ async def get_subs_hand(message: Message, state: FSMContext,
     date = message.text.split(' ')
     try:
         channels: List[Channels] = await channel_service.get_all_user_channels(message.chat.id)
+        if len(channels) == 0:
+            await bot.send_message(message.chat.id, MAIN_ROOM_NO_CHANNELS)
+            return
         result_data = []
         end_sum = 0
         for channel in channels:
@@ -122,9 +132,12 @@ async def get_subs_hand(message: Message, state: FSMContext,
         result_data.append([end_sum])
         filename = await CSVService.create_csv_file(result_data)
         file = FSInputFile(filename)
-        await bot.send_document(message.chat.id, file,
-                                caption=str(end_sum),
-                                reply_markup=back_keyboard())
+        try:
+            await bot.send_document(message.chat.id, file,
+                                    caption='Всего подписчиков - ' + str(end_sum),
+                                    reply_markup=back_keyboard())
+        except:
+            await bot.send_message(message.chat.id, NO_DATA_TEXT)
         await CSVService.delete_csv_file(file_path=filename)
         await log_service.create_log(
             {'user_id': message.chat.id, 'channel_name': 'All', 'req_name': 'period of subs',
@@ -144,6 +157,9 @@ async def get_agv_hand(message: Message, state: FSMContext,
     date = message.text.split(' ')
     try:
         channels: List[Channels] = await channel_service.get_all_user_channels(message.chat.id)
+        if len(channels) == 0:
+            await bot.send_message(message.chat.id, MAIN_ROOM_NO_CHANNELS)
+            return
         result_data = []
         end_sum_time = []
         end_sum_per = []
@@ -168,9 +184,12 @@ async def get_agv_hand(message: Message, state: FSMContext,
         result_data.append([end_sum_time, end_sum_per])
         filename = await CSVService.create_csv_file(result_data)
         file = FSInputFile(filename)
-        await bot.send_document(message.chat.id, file,
-                                caption=f'Между {date[0]} и {date[1]} было {end_sum_time} минут среднего просмотра и {end_sum_per} процентов',
-                                reply_markup=back_keyboard())
+        try:
+            await bot.send_document(message.chat.id, file,
+                                    caption=f'Между {date[0]} и {date[1]} было:\n{end_sum_time} минут среднего просмотра\n{end_sum_per} средний процент просмотра видео',
+                                    reply_markup=back_keyboard())
+        except:
+            await bot.send_message(message.chat.id, NO_DATA_TEXT)
         await CSVService.delete_csv_file(file_path=filename)
         await log_service.create_log(
             {'user_id': message.chat.id, 'channel_name': 'All', 'req_name': 'period of agv view',
@@ -191,6 +210,9 @@ async def get_vid_hand(message: Message, state: FSMContext,
     date = message.text.split(' ')
     try:
         channels: List[Channels] = await channel_service.get_all_user_channels(message.chat.id)
+        if len(channels) == 0:
+            await bot.send_message(message.chat.id, MAIN_ROOM_NO_CHANNELS)
+            return
         result_data = []
         end_result = 0
         for channel in channels:
@@ -201,9 +223,12 @@ async def get_vid_hand(message: Message, state: FSMContext,
         result_data.append([end_result])
         filename = await CSVService.create_csv_file(result_data)
         file = FSInputFile(filename)
-        await bot.send_document(message.chat.id, file,
-                                caption=end_result,
-                                reply_markup=back_keyboard())
+        try:
+            await bot.send_document(message.chat.id, file,
+                                    caption='Всего видео - ' + str(end_result),
+                                    reply_markup=back_keyboard())
+        except:
+            await bot.send_message(message.chat.id, NO_DATA_TEXT)
         await CSVService.delete_csv_file(file_path=filename)
         await log_service.create_log(
             {'user_id': message.chat.id, 'channel_name': 'All', 'req_name': 'period of videos',
@@ -246,7 +271,8 @@ async def add_channel_file_hand(message: Message, state: FSMContext,
         content = file_data.read().decode()
         analytic_url, analytic_flow = await youtube_service.get_analytic_login_url(youtube_credits=content)
         await state.update_data({'analytic_flow': analytic_flow, 'content': content})
-        await bot.send_message(message.chat.id, f'Send first code from this url - [Click here]({analytic_url})',
+        await bot.send_message(message.chat.id,
+                               f'Перейдите по ссылке и выберете нужный google аккаунт\nИ отправте код [Кликните сюда]({analytic_url})',
                                parse_mode='Markdown')
         await state.set_state(PrivateRoom.get_analytic_code)
     except:
@@ -275,7 +301,8 @@ async def get_analytic_code(message: Message, state: FSMContext,
     await state.update_data({'creds_analytic': creds_analytic})
     data_url, data_flow = await youtube_service.get_data_login_url(youtube_credits=content)
     await state.update_data({'data_flow': data_flow})
-    await bot.send_message(message.chat.id, f'Send first code from this url - [Click here]({data_url})',
+    await bot.send_message(message.chat.id,
+                           f'Первая ссылка подтверждена, теперь надо повторить эту операцию еще раз [Вторая ссылка]({data_url})',
                            parse_mode='Markdown')
     await state.set_state(PrivateRoom.get_data_code)
 
@@ -297,6 +324,7 @@ async def get_analytic_code(message: Message, state: FSMContext,
         await private_rooms_hand1(message, state)
         return
     await state.set_state(PrivateRoom.main_room)
+    await private_rooms_hand1(message, state)
 
 
 @private_rooms_router.message(F.text != BACK_TEXT, PrivateRoom.channel_state)
@@ -367,9 +395,13 @@ async def in_req_hand(message: Message, state: FSMContext,
         state_data = await state.get_data()
         channel_name = state_data.get("channel_name")
         result = await youtube_service.get_views_by_date(date[0], date[1], message.chat.id, channel_name)
+        sum_result = sum(result)
         filename = await CSVService.create_csv_file(result)
         file = FSInputFile(filename)
-        await bot.send_document(message.chat.id, file)
+        try:
+            await bot.send_document(message.chat.id, file, caption='Всего просмотров -'+str(sum_result))
+        except:
+            await bot.send_message(message.chat.id, NO_DATA_TEXT)
         await CSVService.delete_csv_file(file_path=filename)
         await log_service.create_log(
             {'user_id': message.chat.id, 'channel_name': channel_name, 'req_name': 'period of view',
@@ -392,7 +424,11 @@ async def in_req_hand(message: Message, state: FSMContext,
         result = await youtube_service.get_subscribers_gained_by_date(date[0], date[1], message.chat.id, channel_name)
         filename = await CSVService.create_csv_file(result[0])
         file = FSInputFile(filename)
-        await bot.send_document(message.chat.id, file, caption=str(result[1]), reply_markup=back_keyboard())
+        try:
+            await bot.send_document(message.chat.id, file, caption='Всего подписчиков - ' + str(result[1]),
+                                    reply_markup=back_keyboard())
+        except:
+            await bot.send_message(message.chat.id, NO_DATA_TEXT)
         await CSVService.delete_csv_file(file_path=filename)
         await log_service.create_log(
             {'user_id': message.chat.id, 'channel_name': channel_name, 'req_name': 'period of subs',
@@ -428,9 +464,12 @@ async def in_req_hand(message: Message, state: FSMContext,
         result_data.append([date[0], date[1], result_avg_view, result_avg_per])
         filename = await CSVService.create_csv_file(result_data)
         file = FSInputFile(filename)
-        await bot.send_document(message.chat.id, file,
-                                caption=f'Между {date[0]} и {date[1]} был средний просмотр {result_avg_view} минут и средний процент просмотра {result_avg_per}',
-                                reply_markup=back_keyboard())
+        try:
+            await bot.send_document(message.chat.id, file,
+                                    caption=f'Между {date[0]} и {date[1]} было:\n{result_avg_view} минут среднего просмотра\n{result_avg_per} средний процент просмотра видео',
+                                    reply_markup=back_keyboard())
+        except:
+            await bot.send_message(message.chat.id, NO_DATA_TEXT)
         await CSVService.delete_csv_file(file_path=filename)
         await log_service.create_log(
             {'user_id': message.chat.id, 'channel_name': channel_name, 'req_name': 'period of agv view',
@@ -454,9 +493,12 @@ async def in_req_hand(message: Message, state: FSMContext,
                                                                channel_name)
         filename = await CSVService.create_csv_file(result)
         file = FSInputFile(filename)
-        await bot.send_document(message.chat.id, file,
-                                caption=str(len(result)),
-                                reply_markup=back_keyboard())
+        try:
+            await bot.send_document(message.chat.id, file,
+                                    caption='Всего видео - '+str(len(result)),
+                                    reply_markup=back_keyboard())
+        except:
+            await bot.send_message(message.chat.id, NO_DATA_TEXT)
         await CSVService.delete_csv_file(file_path=filename)
         await log_service.create_log(
             {'user_id': message.chat.id, 'channel_name': channel_name, 'req_name': 'period of videos',
