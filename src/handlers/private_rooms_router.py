@@ -395,11 +395,13 @@ async def in_req_hand(message: Message, state: FSMContext,
         state_data = await state.get_data()
         channel_name = state_data.get("channel_name")
         result = await youtube_service.get_views_by_date(date[0], date[1], message.chat.id, channel_name)
-        sum_result = sum(result)
+        end_sum = 0
+        for res in result:
+            end_sum += res[1]
         filename = await CSVService.create_csv_file(result)
         file = FSInputFile(filename)
         try:
-            await bot.send_document(message.chat.id, file, caption='Всего просмотров -'+str(sum_result))
+            await bot.send_document(message.chat.id, file, caption='Всего просмотров - ' + str(end_sum))
         except:
             await bot.send_message(message.chat.id, NO_DATA_TEXT)
         await CSVService.delete_csv_file(file_path=filename)
@@ -409,7 +411,8 @@ async def in_req_hand(message: Message, state: FSMContext,
              'date': datetime.now()})
         await state.set_state(PrivateRoom.channel_state)
         await channel_rooms_hand(message, state)
-    except:
+    except Exception as e:
+        print(e)
         await bot.send_message(message.chat.id, main_room_error)
 
 
@@ -495,7 +498,7 @@ async def in_req_hand(message: Message, state: FSMContext,
         file = FSInputFile(filename)
         try:
             await bot.send_document(message.chat.id, file,
-                                    caption='Всего видео - '+str(len(result)),
+                                    caption='Всего видео - ' + str(len(result)),
                                     reply_markup=back_keyboard())
         except:
             await bot.send_message(message.chat.id, NO_DATA_TEXT)
