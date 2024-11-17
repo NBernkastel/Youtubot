@@ -20,9 +20,6 @@ class EnvSettings(BaseSettings):
 class BotSettings(EnvSettings):
     TOKEN: str
 
-class RedisSettings(EnvSettings):
-    REDIS_URL: str
-
 
 class PostgresSettings:
     POSTGRES_USER = os.getenv('POSTGRES_USER')
@@ -34,12 +31,12 @@ class PostgresSettings:
 
 postgres_settings = PostgresSettings()
 
+REDIS_URL = os.getenv("REDIS_URL")
 REDIRECT_URL = "urn:ietf:wg:oauth:2.0:oob"
 MODER_CHAT_ID = -4583801709
 bot_settings = BotSettings()
-redis_settings = RedisSettings()
 SCOPES = ["https://www.googleapis.com/auth/yt-analytics.readonly", "https://www.googleapis.com/auth/youtube.readonly"]
-storage = RedisStorage.from_url(redis_settings.REDIS_URL)
+storage = RedisStorage.from_url(REDIS_URL)
 default = DefaultBotProperties(parse_mode='Markdown', protect_content=False)
 bot = Bot(token=bot_settings.TOKEN, default=default)
 dp = Dispatcher(storage=storage)
