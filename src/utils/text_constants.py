@@ -38,6 +38,9 @@ MAIN_ROOM_NO_CHANNELS = 'У вас отсутствую каналы'
 CHANNELS_ROOM_ERROR_TEXT = 'Не найдено ни одного канала'
 CHANNELS_ROOM_ADD_CHANNEL = 'Добавить канал'
 CHANNELS_ROOM_LIST = 'Список каналов\n'
+CHANNELS_ROOM_DELETE = 'Удалить канал'
+CHANNEL_TO_DELETE_SELECT = 'Выберете канал для удаления'
+WRONG_CHANNEL_TO_DELETE = 'Канала для удаления не существует'
 
 #Channel root text
 CHANNEL_ROOM_ADD = 'Отправьте файл с данными для канала'

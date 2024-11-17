@@ -7,7 +7,8 @@ from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, FSInputFile
 from config import bot
 from src.db.models import Channels
-from src.keyboards.keyboards import main_room_keyboard, room1_keyboard, channel_room_keyboard, back_keyboard
+from src.keyboards.keyboards import main_room_keyboard, room1_keyboard, channel_room_keyboard, back_keyboard, \
+    channel_delete_keyboard
 from src.middlewares.sub_middleware import SubMiddleware
 from src.services.channel_service import ChannelService
 from src.services.log_service import LogService
@@ -20,7 +21,7 @@ from src.utils.dependencies.youtube_fabric import youtube_service_fabric
 from src.utils.text_constants import MAIN_ROOT_TEXT, main_room1, CHANNELS_ROOM_ERROR_TEXT, CHANNELS_ROOM_LIST, \
     CHANNELS_ROOM_ADD_CHANNEL, CHANNEL_ROOM_ADD, CHANNEL_ROOM, main_room2, main_room_period, main_room3, main_room4, \
     main_room5, BACK_TEXT, SUB_CONTINUE, KEY_START_NOT_SUB, CHANNEL_ROOM_ADD_ERROR, CHANNEL_AUTH_ERROR, main_room_error, \
-    MAIN_ROOM_NO_CHANNELS, NO_DATA_TEXT
+    MAIN_ROOM_NO_CHANNELS, NO_DATA_TEXT, CHANNELS_ROOM_DELETE, CHANNEL_TO_DELETE_SELECT, WRONG_CHANNEL_TO_DELETE
 
 private_rooms_router = Router()
 private_rooms_router.message.middleware(SubMiddleware())
@@ -255,6 +256,35 @@ async def channels_room_hand(message: Message, state: FSMContext,
         await bot.send_message(message.chat.id, CHANNELS_ROOM_LIST + channels_str,
                                reply_markup=room1_keyboard(channels))
 
+
+@private_rooms_router.message(F.text == CHANNELS_ROOM_DELETE, PrivateRoom.channel_state)
+async def delete_channel(message: Message, state: FSMContext,
+                         channel_service: ChannelService = channel_service_fabric()):
+    channels = await channel_service.get_all_user_channels(message.chat.id)
+    channels = [channel.channel_name for channel in channels]
+    if len(channels) == 0:
+        return
+    await state.set_state(PrivateRoom.channel_delete)
+    await bot.send_message(message.chat.id, CHANNEL_TO_DELETE_SELECT, reply_markup=channel_delete_keyboard(channels))
+
+
+@private_rooms_router.message(F.text == BACK_TEXT, PrivateRoom.channel_delete)
+async def back_from_delete_channel(message: Message, state: FSMContext):
+    await state.set_state(PrivateRoom.second_stage_rooms)
+    await channels_room_hand(message, state)
+
+
+@private_rooms_router.message(F.text != BACK_TEXT, PrivateRoom.channel_delete)
+async def delete_channel_release(message: Message, state: FSMContext,
+                                 channel_service: ChannelService = channel_service_fabric()):
+    channels = await channel_service.get_all_user_channels(message.chat.id)
+    channels_names = [channel.channel_name for channel in channels]
+    if message.text not in channels_names:
+        bot.send_message(message.chat.id, WRONG_CHANNEL_TO_DELETE)
+        return
+    await channel_service.delete_channel([Channels.channel_name == message.text])
+    await state.set_state(PrivateRoom.second_stage_rooms)
+    await channels_room_hand(message, state)
 
 @private_rooms_router.message(F.text == CHANNELS_ROOM_ADD_CHANNEL, PrivateRoom.channel_state)
 async def add_channel_hand(message: Message, state: FSMContext):

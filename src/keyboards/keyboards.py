@@ -5,7 +5,7 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
 
 from src.utils.text_constants import KEY_START_SUB, main_room1, main_room2, main_room3, main_room4, main_room5, \
     CHANNELS_ROOM_ADD_CHANNEL, ADMIN_GET_USERS_COUNT, ADMIN_CHANNELS_COUNT, ADMIN_GET_USER_REQ, BACK_TEXT, MAKE_SUB, \
-    ACCEPT_SUB, DECLINE_SUB, SUB_CONTINUE, KEY_START_NOT_SUB, SUB_EXP
+    ACCEPT_SUB, DECLINE_SUB, SUB_CONTINUE, KEY_START_NOT_SUB, SUB_EXP, CHANNELS_ROOM_DELETE
 
 
 def open_start_keyboard(free_sub: bool, sub_end: bool):
@@ -44,6 +44,19 @@ def room1_keyboard(channels: List):
             keyboard_builder.row(channel)
     back_button = KeyboardButton(text=BACK_TEXT)
     keyboard_builder.row(button_channel_add)
+    if len(channels) != 0:
+        delete_button = KeyboardButton(text=CHANNELS_ROOM_DELETE)
+        keyboard_builder.row(delete_button)
+    keyboard_builder.row(back_button)
+    return keyboard_builder.as_markup(resize_keyboard=True)
+
+
+def channel_delete_keyboard(channels: List):
+    keyboard_builder = ReplyKeyboardBuilder()
+    channels_list = [KeyboardButton(text=channel) for channel in channels]
+    for channel in channels_list:
+        keyboard_builder.row(channel)
+    back_button = KeyboardButton(text=BACK_TEXT)
     keyboard_builder.row(back_button)
     return keyboard_builder.as_markup(resize_keyboard=True)
 

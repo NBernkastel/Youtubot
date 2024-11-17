@@ -17,6 +17,7 @@ class PrivateRoom(StatesGroup):
     main_room = State()
     second_stage_rooms = State()
     channel_state = State()
+    channel_delete = State()
     send_file = State()
     get_analytic_code = State()
     get_data_code = State()
