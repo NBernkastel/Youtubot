@@ -2,9 +2,7 @@ import asyncio
 import logging
 import sys
 
-from aiogram.fsm.storage.redis import RedisStorage
-
-from config import dp, bot, redis_settings
+from config import dp, bot
 from src.handlers.admin_router import admin_router
 from src.handlers.help_router import help_router
 from src.handlers.private_rooms_router import private_rooms_router
