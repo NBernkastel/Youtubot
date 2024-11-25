@@ -166,14 +166,52 @@ class YoutubeService:
         while request:
             response = request.execute()
             for item in response.get("items", []):
-                video_id = item["id"]["videoId"]
-                title = item["snippet"]["title"]
+                video_id = 'https://www.youtube.com/watch?v='+item["id"]["videoId"]
                 published_at = item["snippet"]["publishedAt"]
                 videos_published.append([
                     video_id,
-                    title,
                     datetime.fromisoformat(published_at)
                 ])
             request = youtube[1].search().list_next(request, response)
 
         return videos_published
+
+    async def get_video_views_by_date(self, start_date, end_date, uid, channel_name):
+        youtube = await self.get_authenticated_service(uid, channel_name)
+        channel_id = await self.get_channel_id(youtube[1])
+        start_date_dt = datetime.strptime(start_date, "%Y-%m-%d")
+        end_date_dt = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+        videos_info = []
+        request = youtube[1].search().list(
+            part="snippet",
+            channelId=channel_id,
+            publishedAfter=start_date_dt.isoformat() + "Z",
+            publishedBefore=end_date_dt.isoformat() + "Z",
+            type="video",
+            maxResults=50
+        )
+        video_ids = []
+        while request:
+            response = request.execute()
+            for item in response.get("items", []):
+                video_id = item["id"]["videoId"]
+                video_ids.append(video_id)
+            request = youtube[1].search().list_next(request, response)
+        for i in range(0, len(video_ids), 50):
+            batch_ids = video_ids[i:i + 50]
+            stats_request = youtube[1].videos().list(
+                part="statistics,snippet",
+                id=",".join(batch_ids)
+            )
+            stats_response = stats_request.execute()
+            for video in stats_response.get("items", []):
+                video_id = f"https://www.youtube.com/watch?v={video['id']}"
+                views = int(video["statistics"].get("viewCount", 0))
+                published_at = video["snippet"]["publishedAt"]
+                videos_info.append([
+                    video_id,
+                    views,
+                    datetime.fromisoformat(published_at.replace("Z", "+00:00"))
+                ])
+
+        return videos_info

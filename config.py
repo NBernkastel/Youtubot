@@ -42,4 +42,5 @@ SCOPES = ["https://www.googleapis.com/auth/yt-analytics.readonly", "https://www.
 storage = RedisStorage.from_url(redis_settings.REDIS_URL)
 default = DefaultBotProperties(parse_mode='Markdown', protect_content=False)
 bot = Bot(token=bot_settings.TOKEN, default=default)
-dp = Dispatcher(storage=storage)
+# dp = Dispatcher(storage=storage)
+dp = Dispatcher()

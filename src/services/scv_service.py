@@ -9,7 +9,7 @@ class CSVService:
     async def create_csv_file(data: List):
         filename = str(uuid.uuid4()) + '.csv'
         with open(filename, mode="w", newline="") as file:
-            writer = csv.writer(file)
+            writer = csv.writer(file, delimiter=';')
             writer.writerows(data)
 
         return filename

@@ -35,6 +35,7 @@ async def from_sub_hand(message: Message, state: FSMContext):
 
 @private_rooms_router.message(F.text.in_([SUB_CONTINUE, KEY_START_NOT_SUB]), PrivateRoom.main_room)
 async def private_rooms_hand1(message: Message, state: FSMContext):
+    await state.update_data(channel_name=None)
     await bot.send_message(message.chat.id, MAIN_ROOT_TEXT, reply_markup=main_room_keyboard())
     await state.set_state(PrivateRoom.second_stage_rooms)
 
@@ -92,6 +93,7 @@ async def get_views_hand(message: Message, state: FSMContext,
             result_data.append([channel.channel_url, sum(res_sum)])
             end_sum += sum(res_sum)
         result_data.append([end_sum])
+        result_data.insert(0, ['channel_url', 'views'])
         filename = await CSVService.create_csv_file(result_data)
         file = FSInputFile(filename)
         try:
@@ -131,6 +133,7 @@ async def get_subs_hand(message: Message, state: FSMContext,
             result_data.append([channel.channel_url, result[1]])
             end_sum += result[1]
         result_data.append([end_sum])
+        result_data.insert(0, ['channel_url', 'subs'])
         filename = await CSVService.create_csv_file(result_data)
         file = FSInputFile(filename)
         try:
@@ -183,6 +186,7 @@ async def get_agv_hand(message: Message, state: FSMContext,
         end_sum_time = round(sum(end_sum_time) / len(end_sum_time), 2)
         end_sum_per = round(sum(end_sum_per) / len(end_sum_per), 2)
         result_data.append([end_sum_time, end_sum_per])
+        result_data.insert(0, ['channel_url', 'avg_time', 'avg_per'])
         filename = await CSVService.create_csv_file(result_data)
         file = FSInputFile(filename)
         try:
@@ -222,6 +226,7 @@ async def get_vid_hand(message: Message, state: FSMContext,
             end_result += len(result)
             result_data.append([channel.channel_url, len(result)])
         result_data.append([end_result])
+        result_data.insert(0, ['channel_url', 'video_count'])
         filename = await CSVService.create_csv_file(result_data)
         file = FSInputFile(filename)
         try:
@@ -286,6 +291,7 @@ async def delete_channel_release(message: Message, state: FSMContext,
     await state.set_state(PrivateRoom.second_stage_rooms)
     await channels_room_hand(message, state)
 
+
 @private_rooms_router.message(F.text == CHANNELS_ROOM_ADD_CHANNEL, PrivateRoom.channel_state)
 async def add_channel_hand(message: Message, state: FSMContext):
     await state.set_state(PrivateRoom.send_file)
@@ -302,9 +308,10 @@ async def add_channel_file_hand(message: Message, state: FSMContext,
         content = file_data.read().decode()
         analytic_url, analytic_flow = await youtube_service.get_analytic_login_url(youtube_credits=content)
         await state.update_data({'analytic_flow': analytic_flow, 'content': content})
-        await bot.send_message(message.chat.id,
-                               f'Перейдите по ссылке и выберете нужный google аккаунт\nИ отправте код [Кликните сюда]({analytic_url})',
-                               parse_mode='Markdown')
+        TOKEN_PHOTO = FSInputFile('./public/token.png')
+        await bot.send_photo(message.chat.id, photo=TOKEN_PHOTO,
+                             caption=f'Перейдите по ссылке и выберете нужный google аккаунт\nИ отправте код [Кликните сюда]({analytic_url})'
+                             , parse_mode='Markdown')
         await state.set_state(PrivateRoom.get_analytic_code)
     except:
         await bot.send_message(message.chat.id, CHANNEL_ROOM_ADD_ERROR)
@@ -332,9 +339,10 @@ async def get_analytic_code(message: Message, state: FSMContext,
     await state.update_data({'creds_analytic': creds_analytic})
     data_url, data_flow = await youtube_service.get_data_login_url(youtube_credits=content)
     await state.update_data({'data_flow': data_flow})
-    await bot.send_message(message.chat.id,
-                           f'Первая ссылка подтверждена, теперь надо повторить эту операцию еще раз [Вторая ссылка]({data_url})',
-                           parse_mode='Markdown')
+    TOKEN_PHOTO = FSInputFile('./public/token.png')
+    await bot.send_photo(message.chat.id, photo=TOKEN_PHOTO,
+                         caption=f'Первая ссылка подтверждена, теперь надо повторить эту операцию еще раз [Вторая ссылка]({data_url})'
+                         , parse_mode='Markdown')
     await state.set_state(PrivateRoom.get_data_code)
 
 
@@ -359,11 +367,18 @@ async def get_analytic_code(message: Message, state: FSMContext,
 
 
 @private_rooms_router.message(F.text != BACK_TEXT, PrivateRoom.channel_state)
-async def channel_rooms_hand(message: Message, state: FSMContext):
+async def channel_rooms_hand(message: Message, state: FSMContext,
+                             channel_service: ChannelService = channel_service_fabric()):
+    channels = await channel_service.get_all_user_channels(message.chat.id)
+    channels_names = [name.channel_name for name in channels]
+    if message.text in channels_names:
+        data = await state.get_data()
+        if not data.get("channel_name"):
+            await state.update_data(channel_name=message.text)
+    else:
+        if await state.get_state() == PrivateRoom.second_stage_rooms:
+            return
     await state.set_state(PrivateRoom.in_req)
-    data = await state.get_data()
-    if not data.get("channel_name"):
-        await state.update_data(channel_name=message.text)
     await bot.send_message(message.chat.id, CHANNEL_ROOM, reply_markup=channel_room_keyboard())
 
 
@@ -425,10 +440,12 @@ async def in_req_hand(message: Message, state: FSMContext,
     try:
         state_data = await state.get_data()
         channel_name = state_data.get("channel_name")
-        result = await youtube_service.get_views_by_date(date[0], date[1], message.chat.id, channel_name)
+        result = await youtube_service.get_video_views_by_date(date[0], date[1], message.chat.id, channel_name)
         end_sum = 0
         for res in result:
             end_sum += res[1]
+        result.insert(0, ['url', 'views', 'date'])
+        result.append([end_sum])
         filename = await CSVService.create_csv_file(result)
         file = FSInputFile(filename)
         try:
@@ -456,6 +473,8 @@ async def in_req_hand(message: Message, state: FSMContext,
         state_data = await state.get_data()
         channel_name = state_data.get("channel_name")
         result = await youtube_service.get_subscribers_gained_by_date(date[0], date[1], message.chat.id, channel_name)
+        result[0].insert(0, ['date', 'subs'])
+        result[0].append([result[1]])
         filename = await CSVService.create_csv_file(result[0])
         file = FSInputFile(filename)
         try:
@@ -495,7 +514,8 @@ async def in_req_hand(message: Message, state: FSMContext,
             result_avg_per.append(result_percents[i][1])
         result_avg_view = round(sum(result_avg_view) / len(result_avg_view), 2)
         result_avg_per = round(sum(result_avg_per) / len(result_avg_per), 2)
-        result_data.append([date[0], date[1], result_avg_view, result_avg_per])
+        result_data.append([date[0], date[1], result_avg_per, result_avg_view])
+        result_data.insert(0, ['date', 'average_percent', 'average_time'])
         filename = await CSVService.create_csv_file(result_data)
         file = FSInputFile(filename)
         try:
@@ -525,11 +545,13 @@ async def in_req_hand(message: Message, state: FSMContext,
         channel_name = state_data.get("channel_name")
         result = await youtube_service.get_video_count_by_date(date[0], date[1], message.chat.id,
                                                                channel_name)
+        result.append([len(result)])
+        result.insert(0, ['url', 'date'])
         filename = await CSVService.create_csv_file(result)
         file = FSInputFile(filename)
         try:
             await bot.send_document(message.chat.id, file,
-                                    caption='Всего видео - ' + str(len(result)),
+                                    caption='Всего видео - ' + str(len(result) - 2),
                                     reply_markup=back_keyboard())
         except:
             await bot.send_message(message.chat.id, NO_DATA_TEXT)
