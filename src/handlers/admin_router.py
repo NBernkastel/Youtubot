@@ -61,6 +61,7 @@ async def log_hand(message: Message, state: FSMContext, log_service: LogService 
     for log in logs:
         data.append([log.user_id, log.channel_name, log.req_name, log.start_date, log.end_date, log.date])
     if len(data) > 0:
+        data.insert(0, ['chat_id', 'channel_name', 'req_type', 'start_date', 'end_date', 'date'])
         filename = await CSVService.create_csv_file(data)
         file = FSInputFile(filename)
         await bot.send_document(message.chat.id, file)
