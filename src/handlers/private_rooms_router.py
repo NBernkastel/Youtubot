@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import List
 
+import googleapiclient
 from aiogram import Router, F
 from aiogram.filters import StateFilter
 from aiogram.fsm.context import FSMContext
@@ -21,7 +22,8 @@ from src.utils.dependencies.youtube_fabric import youtube_service_fabric
 from src.utils.text_constants import MAIN_ROOT_TEXT, main_room1, CHANNELS_ROOM_ERROR_TEXT, CHANNELS_ROOM_LIST, \
     CHANNELS_ROOM_ADD_CHANNEL, CHANNEL_ROOM_ADD, CHANNEL_ROOM, main_room2, main_room_period, main_room3, main_room4, \
     main_room5, BACK_TEXT, SUB_CONTINUE, KEY_START_NOT_SUB, CHANNEL_ROOM_ADD_ERROR, CHANNEL_AUTH_ERROR, main_room_error, \
-    MAIN_ROOM_NO_CHANNELS, NO_DATA_TEXT, CHANNELS_ROOM_DELETE, CHANNEL_TO_DELETE_SELECT, WRONG_CHANNEL_TO_DELETE
+    MAIN_ROOM_NO_CHANNELS, NO_DATA_TEXT, CHANNELS_ROOM_DELETE, CHANNEL_TO_DELETE_SELECT, WRONG_CHANNEL_TO_DELETE, \
+    MAIN_ERROR
 
 private_rooms_router = Router()
 private_rooms_router.message.middleware(SubMiddleware())
@@ -87,11 +89,15 @@ async def get_views_hand(message: Message, state: FSMContext,
             return
         result_data = []
         end_sum = 0
-        for channel in channels:
-            result = await youtube_service.get_views_by_date(date[0], date[1], message.chat.id, channel.channel_name)
-            res_sum = [res[1] for res in result]
-            result_data.append([channel.channel_url, sum(res_sum)])
-            end_sum += sum(res_sum)
+        try:
+            for channel in channels:
+                result = await youtube_service.get_views_by_date(date[0], date[1], message.chat.id, channel.channel_name)
+                res_sum = [res[1] for res in result]
+                result_data.append([channel.channel_url, sum(res_sum)])
+                end_sum += sum(res_sum)
+        except (UnboundLocalError, ValueError, IndexError, googleapiclient.errors.HttpError):
+            await bot.send_message(message.chat.id, main_room_error)
+            return
         result_data.append([end_sum])
         result_data.insert(0, ['channel_url', 'views'])
         filename = await CSVService.create_csv_file(result_data)
@@ -110,8 +116,8 @@ async def get_views_hand(message: Message, state: FSMContext,
         await state.set_state(PrivateRoom.main_room)
         await private_rooms_hand1(message, state)
     except Exception as e:
-        print(e)
-        await bot.send_message(message.chat.id, main_room_error)
+        print(type(e))
+        await bot.send_message(message.chat.id, MAIN_ERROR)
 
 
 @private_rooms_router.message(F.text != BACK_TEXT, PrivateRoom.main_period_enter_for_subs)
@@ -127,11 +133,15 @@ async def get_subs_hand(message: Message, state: FSMContext,
             return
         result_data = []
         end_sum = 0
-        for channel in channels:
-            result = await youtube_service.get_subscribers_gained_by_date(date[0], date[1], message.chat.id,
-                                                                          channel.channel_name)
-            result_data.append([channel.channel_url, result[1]])
-            end_sum += result[1]
+        try:
+            for channel in channels:
+                result = await youtube_service.get_subscribers_gained_by_date(date[0], date[1], message.chat.id,
+                                                                              channel.channel_name)
+                result_data.append([channel.channel_url, result[1]])
+                end_sum += result[1]
+        except (UnboundLocalError, ValueError, IndexError, googleapiclient.errors.HttpError):
+            await bot.send_message(message.chat.id, main_room_error)
+            return
         result_data.append([end_sum])
         result_data.insert(0, ['channel_url', 'subs'])
         filename = await CSVService.create_csv_file(result_data)
@@ -150,7 +160,7 @@ async def get_subs_hand(message: Message, state: FSMContext,
         await state.set_state(PrivateRoom.main_room)
         await private_rooms_hand1(message, state)
     except:
-        await bot.send_message(message.chat.id, main_room_error)
+        await bot.send_message(message.chat.id, MAIN_ERROR)
 
 
 @private_rooms_router.message(F.text != BACK_TEXT, PrivateRoom.main_period_enter_for_agv_view)
@@ -169,20 +179,24 @@ async def get_agv_hand(message: Message, state: FSMContext,
         end_sum_per = []
         result_time_sum = []
         result_per_sum = []
-        for channel in channels:
-            result_time = await youtube_service.get_average_view_duration_by_date(date[0], date[1], message.chat.id,
-                                                                                  channel.channel_name)
-            result_percent = await youtube_service.get_average_view_percentage_by_date(date[0], date[1],
-                                                                                       message.chat.id,
-                                                                                       channel.channel_name)
-            for i in range(len(result_time)):
-                result_time_sum.append(result_time[i][1])
-                result_per_sum.append(result_percent[i][1])
-            result_data.append(
-                [channel.channel_url, round(sum(result_time_sum) / len(result_time_sum), 2),
-                 round(sum(result_per_sum) / len(result_per_sum), 2)])
-            end_sum_time.append(round(sum(result_time_sum) / len(result_time_sum), 2))
-            end_sum_per.append(round(sum(result_per_sum) / len(result_per_sum), 2))
+        try:
+            for channel in channels:
+                result_time = await youtube_service.get_average_view_duration_by_date(date[0], date[1], message.chat.id,
+                                                                                      channel.channel_name)
+                result_percent = await youtube_service.get_average_view_percentage_by_date(date[0], date[1],
+                                                                                           message.chat.id,
+                                                                                           channel.channel_name)
+                for i in range(len(result_time)):
+                    result_time_sum.append(result_time[i][1])
+                    result_per_sum.append(result_percent[i][1])
+                result_data.append(
+                    [channel.channel_url, round(sum(result_time_sum) / len(result_time_sum), 2),
+                     round(sum(result_per_sum) / len(result_per_sum), 2)])
+                end_sum_time.append(round(sum(result_time_sum) / len(result_time_sum), 2))
+                end_sum_per.append(round(sum(result_per_sum) / len(result_per_sum), 2))
+        except (UnboundLocalError, ValueError, IndexError, googleapiclient.errors.HttpError):
+            await bot.send_message(message.chat.id, main_room_error)
+            return
         end_sum_time = round(sum(end_sum_time) / len(end_sum_time), 2)
         end_sum_per = round(sum(end_sum_per) / len(end_sum_per), 2)
         result_data.append([end_sum_time, end_sum_per])
@@ -203,8 +217,7 @@ async def get_agv_hand(message: Message, state: FSMContext,
         await state.set_state(PrivateRoom.main_room)
         await private_rooms_hand1(message, state)
     except Exception as e:
-        print(e)
-        await bot.send_message(message.chat.id, main_room_error)
+        await bot.send_message(message.chat.id, MAIN_ERROR)
 
 
 @private_rooms_router.message(F.text != BACK_TEXT, PrivateRoom.main_period_enter_for_videos)
@@ -220,11 +233,15 @@ async def get_vid_hand(message: Message, state: FSMContext,
             return
         result_data = []
         end_result = 0
-        for channel in channels:
-            result = await youtube_service.get_video_count_by_date(date[0], date[1], message.chat.id,
-                                                                   channel.channel_name)
-            end_result += len(result)
-            result_data.append([channel.channel_url, len(result)])
+        try:
+            for channel in channels:
+                result = await youtube_service.get_video_count_by_date(date[0], date[1], message.chat.id,
+                                                                       channel.channel_name)
+                end_result += len(result)
+                result_data.append([channel.channel_url, len(result)])
+        except (UnboundLocalError, ValueError, IndexError, googleapiclient.errors.HttpError):
+            await bot.send_message(message.chat.id, main_room_error)
+            return
         result_data.append([end_result])
         result_data.insert(0, ['channel_url', 'video_count'])
         filename = await CSVService.create_csv_file(result_data)
@@ -243,7 +260,7 @@ async def get_vid_hand(message: Message, state: FSMContext,
         await state.set_state(PrivateRoom.main_room)
         await private_rooms_hand1(message, state)
     except:
-        await bot.send_message(message.chat.id, main_room_error)
+        await bot.send_message(message.chat.id, MAIN_ERROR)
 
 
 # One channel hands
@@ -436,11 +453,15 @@ async def in_req_back_hand(message: Message, state: FSMContext):
 async def in_req_hand(message: Message, state: FSMContext,
                       youtube_service: YoutubeService = youtube_service_fabric(),
                       log_service: LogService = log_service_fabric()):
-    date = message.text.split(' ')
     try:
         state_data = await state.get_data()
         channel_name = state_data.get("channel_name")
-        result = await youtube_service.get_video_views_by_date(date[0], date[1], message.chat.id, channel_name)
+        try:
+            date = message.text.split(' ')
+            result = await youtube_service.get_video_views_by_date(date[0], date[1], message.chat.id, channel_name)
+        except (UnboundLocalError, ValueError, IndexError, googleapiclient.errors.HttpError):
+            await bot.send_message(message.chat.id, main_room_error)
+            return
         end_sum = 0
         for res in result:
             end_sum += res[1]
@@ -460,19 +481,22 @@ async def in_req_hand(message: Message, state: FSMContext,
         await state.set_state(PrivateRoom.channel_state)
         await channel_rooms_hand(message, state)
     except Exception as e:
-        print(e)
-        await bot.send_message(message.chat.id, main_room_error)
+        await bot.send_message(message.chat.id, MAIN_ERROR)
 
 
 @private_rooms_router.message(F.text != BACK_TEXT, PrivateRoom.period_enter_for_subs)
 async def in_req_hand(message: Message, state: FSMContext,
                       youtube_service: YoutubeService = youtube_service_fabric(),
                       log_service: LogService = log_service_fabric()):
-    date = message.text.split(' ')
     try:
         state_data = await state.get_data()
         channel_name = state_data.get("channel_name")
-        result = await youtube_service.get_subscribers_gained_by_date(date[0], date[1], message.chat.id, channel_name)
+        try:
+            date = message.text.split(' ')
+            result = await youtube_service.get_subscribers_gained_by_date(date[0], date[1], message.chat.id, channel_name)
+        except (UnboundLocalError, ValueError, IndexError, googleapiclient.errors.HttpError):
+            await bot.send_message(message.chat.id, main_room_error)
+            return
         result[0].insert(0, ['date', 'subs'])
         result[0].append([result[1]])
         filename = await CSVService.create_csv_file(result[0])
@@ -490,21 +514,25 @@ async def in_req_hand(message: Message, state: FSMContext,
         await state.set_state(PrivateRoom.channel_state)
         await channel_rooms_hand(message, state)
     except:
-        await bot.send_message(message.chat.id, main_room_error)
+        await bot.send_message(message.chat.id, MAIN_ERROR)
 
 
 @private_rooms_router.message(F.text != BACK_TEXT, PrivateRoom.period_enter_for_agv_view)
 async def in_req_hand(message: Message, state: FSMContext,
                       youtube_service: YoutubeService = youtube_service_fabric(),
                       log_service: LogService = log_service_fabric()):
-    date = message.text.split(' ')
     try:
         state_data = await state.get_data()
         channel_name = state_data.get("channel_name")
-        result_times = await youtube_service.get_average_view_duration_by_date(date[0], date[1], message.chat.id,
-                                                                               channel_name)
-        result_percents = await youtube_service.get_average_view_percentage_by_date(date[0], date[1], message.chat.id,
-                                                                                    channel_name)
+        try:
+            date = message.text.split(' ')
+            result_times = await youtube_service.get_average_view_duration_by_date(date[0], date[1], message.chat.id,
+                                                                                   channel_name)
+            result_percents = await youtube_service.get_average_view_percentage_by_date(date[0], date[1], message.chat.id,
+                                                                                        channel_name)
+        except (UnboundLocalError, ValueError, IndexError, googleapiclient.errors.HttpError):
+            await bot.send_message(message.chat.id, main_room_error)
+            return
         result_data = []
         result_avg_view = []
         result_avg_per = []
@@ -532,19 +560,23 @@ async def in_req_hand(message: Message, state: FSMContext,
         await state.set_state(PrivateRoom.channel_state)
         await channel_rooms_hand(message, state)
     except:
-        await bot.send_message(message.chat.id, main_room_error)
+        await bot.send_message(message.chat.id, MAIN_ERROR)
 
 
 @private_rooms_router.message(F.text != BACK_TEXT, PrivateRoom.period_enter_for_videos)
 async def in_req_hand(message: Message, state: FSMContext,
                       youtube_service: YoutubeService = youtube_service_fabric(),
                       log_service: LogService = log_service_fabric()):
-    date = message.text.split(' ')
     try:
         state_data = await state.get_data()
         channel_name = state_data.get("channel_name")
-        result = await youtube_service.get_video_count_by_date(date[0], date[1], message.chat.id,
+        try:
+            date = message.text.split(' ')
+            result = await youtube_service.get_video_count_by_date(date[0], date[1], message.chat.id,
                                                                channel_name)
+        except (UnboundLocalError, ValueError, IndexError, googleapiclient.errors.HttpError):
+            await bot.send_message(message.chat.id, main_room_error)
+            return
         result.append([len(result)])
         result.insert(0, ['url', 'date'])
         filename = await CSVService.create_csv_file(result)
@@ -563,5 +595,4 @@ async def in_req_hand(message: Message, state: FSMContext,
         await state.set_state(PrivateRoom.channel_state)
         await channel_rooms_hand(message, state)
     except Exception as e:
-        print(e)
-        await bot.send_message(message.chat.id, main_room_error)
+        await bot.send_message(message.chat.id, MAIN_ERROR)

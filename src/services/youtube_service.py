@@ -30,6 +30,7 @@ class YoutubeService:
             creds_data = Credentials.from_authorized_user_info(json.loads(channel.youtube_data_token), [SCOPES[1]])
         if auth or not creds_analytic or not creds_analytic.valid:
             if not auth:
+
                 if (creds_analytic and creds_analytic.expired and creds_analytic.refresh_token) or (
                         creds_data and creds_data.expired and creds_data.refresh_token):
                     creds_analytic.refresh(google.auth.transport.requests.Request())
@@ -109,6 +110,7 @@ class YoutubeService:
             date, subscribers_gained = row
             subs.append([str(date), subscribers_gained])
             subs_sum += subscribers_gained
+        subs.sort(key=lambda x: x[0], reverse=True)
         return subs, subs_sum
 
     async def get_average_view_duration_by_date(self, start_date, end_date, uid, channel_name):
@@ -125,6 +127,7 @@ class YoutubeService:
             date, avg_view_duration = row
             avg_view_duration_minutes = round(avg_view_duration / 60, 2)
             durations.append([date, avg_view_duration_minutes])
+        durations.sort(key=lambda x: x[0], reverse=True)
         return durations
 
     async def get_average_view_percentage_by_date(self, start_date, end_date, uid, channel_name):
@@ -140,6 +143,7 @@ class YoutubeService:
         for row in response.get("rows", []):
             date, avg_view_percentage = row
             percents.append([date, round(avg_view_percentage, 2)])
+        percents.sort(key=lambda x: x[0], reverse=True)
         return percents
 
     async def get_channel_id(self, youtube):
@@ -173,7 +177,7 @@ class YoutubeService:
                     datetime.fromisoformat(published_at)
                 ])
             request = youtube[1].search().list_next(request, response)
-
+        videos_published.sort(key=lambda x: x[1], reverse=True)
         return videos_published
 
     async def get_video_views_by_date(self, start_date, end_date, uid, channel_name):
@@ -213,5 +217,5 @@ class YoutubeService:
                     views,
                     datetime.fromisoformat(published_at.replace("Z", "+00:00"))
                 ])
-
+        videos_info.sort(key=lambda x: x[2], reverse=True)
         return videos_info
